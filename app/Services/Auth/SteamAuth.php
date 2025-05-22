@@ -16,32 +16,32 @@ class SteamAuth implements SteamAuthInterface
     /**
      * @var string
      */
-    public $steamId;
+    public string $steamId;
 
     /**
      * @var SteamInfo
      */
-    public $steamInfo;
+    public SteamInfo $steamInfo;
 
     /**
      * @var string
      */
-    public $authUrl;
+    public string $authUrl;
 
     /**
      * @var Request
      */
-    private $request;
+    private Request $request;
 
     /**
      * @var GuzzleClient
      */
-    protected $guzzleClient;
+    protected GuzzleClient $guzzleClient;
 
     /**
      * @var array
      */
-    protected $customRequestOptions = [];
+    protected array $customRequestOptions = [];
 
     /**
      * @var string
@@ -270,9 +270,6 @@ class SteamAuth implements SteamAuthInterface
      */
     public function parseInfo(): void
     {
-        if (is_null($this->steamId)) {
-            return;
-        }
 
         if (empty(Config::get('steam-auth.api_key'))) {
             throw new RuntimeException('The Steam API key has not been specified.');
@@ -304,9 +301,6 @@ class SteamAuth implements SteamAuthInterface
      */
     public function getUserInfo(): SteamInfo
     {
-        if (!$this->steamInfo) {
-            throw new RuntimeException('SteamInfo не инициализирован. Убедитесь, что метод validate() был вызван.');
-        }
 
         return $this->steamInfo;
     }

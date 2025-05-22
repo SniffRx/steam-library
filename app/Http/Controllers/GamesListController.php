@@ -13,7 +13,7 @@ use Inertia\Response;
 class GamesListController extends Controller
 {
 
-    private $steamService;
+    private SteamService $steamService;
 
     public function __construct(SteamService $steamService)
     {
