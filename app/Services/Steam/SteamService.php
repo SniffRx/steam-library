@@ -219,7 +219,7 @@ class SteamService
      * Получить информацию о уровне пользователя Steam.
      *
      * @param string $steamId
-     * @return array
+     * @return int
      */
     public function getUserLevel(string $steamId): int
     {
