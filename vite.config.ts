@@ -14,6 +14,10 @@ export default defineConfig({
         react(),
         tailwindcss()
     ],
+    build: {
+        outDir: 'public/build', // 👈 это важно для Laravel
+        emptyOutDir: true
+    },
     esbuild: {
         jsx: 'automatic'
     },

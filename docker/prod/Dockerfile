@@ -48,7 +48,7 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # Копируем билд фронта из предыдущего stage
-COPY --from=frontend /app/dist /var/www/html/public/build
+COPY --from=frontend /app/public/build /var/www/html/public/build
 
 # Права
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html/storage
