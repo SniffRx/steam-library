@@ -1,0 +1,841 @@
+import { useRef, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import { Head, usePage } from '@inertiajs/react';
+import { BreadcrumbItem } from '@/types';
+// import { Game, Friend, GameDetails, PageProps } from './types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Games List', href: '/gameslist' }
+];
+
+
+
+export default function Gameslist() {
+    const { games, friends, gameCount, error } = usePage<PageProps>().props;
+    const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+    const [gameDetails, setGameDetails] = useState<GameDetails | null>(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [completedGames, setCompletedGames] = useState<number[]>([]);
+
+    const handleGameSelect = async (game: Game) => {
+        setSelectedGame(game);
+        setLoadingDetails(true);
+        try {
+            const response = await fetch(`/steam/game/${game.appid}`, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch game details');
+
+            const contentType = response.headers.get("Content-Type");
+            if (!contentType?.includes("application/json")) {
+                const errorText = await response.text();
+                throw new Error(`Invalid JSON response: ${errorText}`);
+            }
+
+            const details: GameDetails = await response.json();
+
+            if (!Array.isArray(details.achievements)) {
+                details.achievements = [];
+            }
+
+            const gameFriends = friends.filter(f => f.gameid === game.appid.toString());
+            setGameDetails({
+                ...details,
+                friends: gameFriends
+            });
+        } catch (err) {
+            console.error('Error loading game details:', err);
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    const handleCompletionToggle = (gameId: number) => {
+        setCompletedGames(prev =>
+            prev.includes(gameId)
+                ? prev.filter(id => id !== gameId)
+                : [...prev, gameId]
+        );
+    };
+
+    const filteredGames = games.filter(game =>
+        game.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const sortedGames = filteredGames.sort((a, b) => b.playtime_forever - a.playtime_forever);
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Games List" />
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                {error && (
+                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg">
+                        {error}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Левая колонка - список игр */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-gray-800/50 rounded-xl shadow-lg p-6">
+                            <h2 className="text-2xl font-bold text-white mb-6">Your Games ({gameCount})</h2>
+
+                            <div className="relative mb-6">
+                                <input
+                                    type="text"
+                                    placeholder="Search games..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <svg
+                                    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+
+                            <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
+                                {sortedGames.map(game => (
+                                    <GameCard
+                                        key={game.appid}
+                                        game={game}
+                                        isSelected={selectedGame?.appid === game.appid}
+                                        isCompleted={completedGames.includes(game.appid)}
+                                        onSelect={() => handleGameSelect(game)}
+                                        onCompletion={() => handleCompletionToggle(game.appid)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Правая колонка - детали игры */}
+                    <div className="lg:col-span-2">
+                        {loadingDetails ? (
+                            <div className="bg-gray-800/50 rounded-xl shadow-lg p-6 flex items-center justify-center h-full">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                            </div>
+                        ) : selectedGame ? (
+                            <EnhancedGameDetailsView
+                                game={selectedGame}
+                                details={gameDetails}
+                                isCompleted={completedGames.includes(selectedGame.appid)}
+                                onCompletion={() => handleCompletionToggle(selectedGame.appid)}
+                            />
+                        ) : (
+                            <div className="bg-gray-800/50 rounded-xl shadow-lg p-6 flex items-center justify-center h-64">
+                                <div className="text-center text-gray-400">
+                                    <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                    <p className="mt-2">Select a game to view details</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </AppLayout>
+    );
+}
+
+function GameCard({ game, isSelected, isCompleted, onSelect, onCompletion }: {
+    game: Game;
+    isSelected: boolean;
+    isCompleted: boolean;
+    onSelect: () => void;
+    onCompletion: () => void;
+}) {
+    return (
+        <div
+            className={`p-4 rounded-lg cursor-pointer transition-all ${
+                isSelected
+                    ? 'bg-blue-600/20 border-2 border-blue-500'
+                    : 'bg-gray-700/50 hover:bg-gray-700/70 border-2 border-transparent'
+            }`}
+            onClick={onSelect}
+        >
+            <div className="flex items-center gap-4">
+                {game.img_icon_url && (
+                    <img
+                        src={`https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg`}
+                        alt={game.name}
+                        className="w-16 h-16 rounded-lg object-cover"
+                    />
+                )}
+
+                <div className="flex-1 min-w-0">
+                    <h3 className={`font-medium truncate ${
+                        isSelected ? 'text-white' : 'text-gray-200'
+                    }`}>
+                        {game.name}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                        {(game.playtime_forever / 60).toFixed(1)} hours
+                    </p>
+                </div>
+
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onCompletion();
+                    }}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                        isCompleted
+                            ? 'bg-green-600/90 hover:bg-green-700 text-white'
+                            : 'bg-gray-600/70 hover:bg-gray-500/80 text-gray-300'
+                    }`}
+                >
+                    {isCompleted ? '✓ Completed' : 'Mark Complete'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function EnhancedGameDetailsView({ game, details, isCompleted, onCompletion }: {
+    game: Game;
+    details: GameDetails | null;
+    isCompleted: boolean;
+    onCompletion: () => void;
+}) {
+    const [activeMediaTab, setActiveMediaTab] = useState<'screenshots' | 'videos'>('screenshots');
+    const achievementsArray = Array.isArray(details?.achievements) ? details.achievements : [];
+    const unlockedAchievements = achievementsArray.filter(a => a.achieved);
+    const lockedAchievements = achievementsArray.filter(a => !a.achieved);
+    const carouselRef = useRef(null);
+    const [currentScreenshotIndex, setCurrentScreenshotIndex] = useState(0);
+
+    // Обработка скриншотов
+    const screenshots = details?.screenshots?.map(screenshot => ({
+        id: screenshot.id,
+        url: screenshot.path_full || screenshot.path_thumbnail || details.header_image || 'https://via.placeholder.com/800x450/1a202c/718096?text=No+Image'
+    })) || [{ id: 1, url: details?.header_image || 'https://via.placeholder.com/800x450/1a202c/718096?text=No+Image' }];
+
+    // Обработка видео
+    const videos = details?.movies?.map(movie => ({
+        id: movie.id,
+        title: movie.name,
+        thumbnail: movie.thumbnail,
+        videoUrl: movie.mp4?.max || movie.webm?.max
+    })) || [];
+
+    return (
+        <div className="bg-gray-800/50 rounded-xl shadow-lg overflow-hidden">
+            {/* Hero секция с обложкой и основной информацией */}
+            <div className="relative">
+                {details?.header_image && (
+                    <img
+                        src={details.header_image}
+                        alt={details.name}
+                        className="w-full h-64 object-cover object-top"
+                    />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/30 to-transparent" />
+
+                <div className="relative p-6">
+                    <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                                <h1 className="text-3xl font-bold text-white">{details?.name || game.name}</h1>
+                                {isCompleted && (
+                                    <span
+                                        className="bg-green-600/90 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd"
+                                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                  clipRule="evenodd" />
+                                        </svg>
+                                        Completed
+                                    </span>
+                                )}
+                            </div>
+
+                            {details?.short_description && (
+                                <p className="text-gray-300 max-w-3xl">{details.short_description}</p>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-3">
+                            {details?.price && (
+                                <div className="text-right">
+                                    <span className="text-xs text-gray-400 block">Price</span>
+                                    <span className="text-xl font-bold text-green-400">{details.price}</span>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={onCompletion}
+                                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                                    isCompleted
+                                        ? 'bg-green-600/90 hover:bg-green-700 text-white'
+                                        : 'bg-blue-600/90 hover:bg-blue-700 text-white'
+                                }`}
+                            >
+                                {isCompleted ? (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                  d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Completed
+                                    </>
+                                ) : 'Mark as Completed'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Мета-информация */}
+                    <div className="flex flex-wrap items-center gap-4 mt-4">
+                        {details?.metacritic?.score && (
+                            <div className="flex items-center gap-2">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    details.metacritic.score >= 75 ? 'bg-green-600' :
+                                        details.metacritic.score >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                                }`}>
+                                    <span className="font-bold text-white">{details.metacritic.score}</span>
+                                </div>
+                                <span className="text-sm text-gray-300">Metacritic</span>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                                <span className="font-bold text-white">{(game.playtime_forever / 60).toFixed(0)}</span>
+                            </div>
+                            <span className="text-sm text-gray-300">Hours Played</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
+                                <span
+                                    className="font-bold text-white">{unlockedAchievements.length}/{achievementsArray.length}</span>
+                            </div>
+                            <span className="text-sm text-gray-300">Achievements</span>
+                        </div>
+
+                        {details?.release_date?.date && (
+                            <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd"
+                                              d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                              clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span className="text-xs text-gray-400 block">Released</span>
+                                    <span className="text-sm text-gray-300">{details.release_date.date}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {details?.developers?.[0] && (
+                            <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd"
+                                              d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                              clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span className="text-xs text-gray-400 block">Developer</span>
+                                    <span className="text-sm text-gray-300">{details.developers[0]}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Медиа галерея (скриншоты/видео) */}
+            {(screenshots.length > 0 || videos.length > 0) && (
+                <div className="px-6 pt-4">
+                    <div className="border-b border-gray-700">
+                        <nav className="flex space-x-4">
+                            {screenshots.length > 0 && (
+                                <button
+                                    onClick={() => setActiveMediaTab('screenshots')}
+                                    className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                                        activeMediaTab === 'screenshots'
+                                            ? 'border-blue-500 text-blue-400'
+                                            : 'border-transparent text-gray-400 hover:text-gray-300'
+                                    }`}
+                                >
+                                    Screenshots
+                                </button>
+                            )}
+                            {videos.length > 0 && (
+                                <button
+                                    onClick={() => setActiveMediaTab('videos')}
+                                    className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                                        activeMediaTab === 'videos'
+                                            ? 'border-blue-500 text-blue-400'
+                                            : 'border-transparent text-gray-400 hover:text-gray-300'
+                                    }`}
+                                >
+                                    Videos
+                                </button>
+                            )}
+                        </nav>
+                    </div>
+
+                    <div className="mt-4">
+                        {/* Блок скриншотов */}
+                        {activeMediaTab === 'screenshots' && screenshots.length > 0 ? (
+                            <div className="relative w-full h-80 bg-gray-700 rounded-lg overflow-hidden">
+                                {/* Контейнер слайдов */}
+                                <div className="flex h-full transition-transform duration-300 ease-in-out"
+                                     style={{ transform: `translateX(-${currentScreenshotIndex * 100}%)` }}>
+                                    {screenshots.map((screenshot) => (
+                                        <div key={screenshot.id} className="w-full flex-shrink-0">
+                                            <img
+                                                src={screenshot.url}
+                                                alt={`Screenshot ${screenshot.id}`}
+                                                className="w-full h-full object-contain"
+                                                loading="lazy" // Ленивая загрузка для оптимизации
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Кнопки навигации */}
+                                <button
+                                    onClick={() => setCurrentScreenshotIndex(prev =>
+                                        prev === 0 ? screenshots.length - 1 : prev - 1
+                                    )}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/75 transition-all"
+                                    aria-label="Previous screenshot"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                              d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => setCurrentScreenshotIndex(prev =>
+                                        prev === screenshots.length - 1 ? 0 : prev + 1
+                                    )}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/75 transition-all"
+                                    aria-label="Next screenshot"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                              d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+
+                                {/* Индикаторы слайдов */}
+                                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                                    {screenshots.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setCurrentScreenshotIndex(index)}
+                                            className={`w-2 h-2 rounded-full transition-all ${
+                                                currentScreenshotIndex === index ? 'bg-white w-4' : 'bg-white/50'
+                                            }`}
+                                            aria-label={`Go to screenshot ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* Блок видео (оставляем без изменений) */}
+                        {activeMediaTab === 'videos' && videos.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {videos.map((video) => (
+                                    <div key={video.id} className="relative group">
+                                        <img
+                                            src={video.thumbnail}
+                                            alt={video.title}
+                                            className="w-full h-40 object-cover rounded-lg"
+                                        />
+                                        <div
+                                            className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg">
+                                            <button
+                                                className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform"
+                                                onClick={() => window.open(video.videoUrl, '_blank')}
+                                                aria-label={`Play ${video.title}`}
+                                            >
+                                                <svg className="w-5 h-5 text-white" fill="currentColor"
+                                                     viewBox="0 0 20 20">
+                                                    <path
+                                                        d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div
+                                            className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent rounded-b-lg">
+                                            <p className="text-white font-medium">{video.title}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="bg-gray-700/30 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-white mb-4">Game Details</h3>
+                    <div className="space-y-3">
+                        {details?.developers?.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-400">Developer</p>
+                                <p className="text-white">{details.developers.join(', ')}</p>
+                            </div>
+                        )}
+                        {details?.publishers?.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-400">Publisher</p>
+                                <p className="text-white">{details.publishers.join(', ')}</p>
+                            </div>
+                        )}
+                        {details?.release_date?.date && (
+                            <div>
+                                <p className="text-sm text-gray-400">Release Date</p>
+                                <p className="text-white">{details.release_date.date}</p>
+                            </div>
+                        )}
+                        {details?.website && (
+                            <div>
+                                <p className="text-sm text-gray-400">Website</p>
+                                <a href={details.website} target="_blank" rel="noopener noreferrer"
+                                   className="text-blue-400 hover:underline">
+                                    {new URL(details.website).hostname}
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-gray-700/30 rounded-xl p-5">
+                    <h3 className="text-lg font-semibold text-white mb-4">System Requirements</h3>
+                    {details?.pc_requirements?.minimum ? (
+                        <div className="prose prose-invert max-w-none text-gray-300 text-sm"
+                             dangerouslySetInnerHTML={{ __html: details.pc_requirements.minimum }} />
+                    ) : (
+                        <p className="text-gray-400">No system requirements specified</p>
+                    )}
+                </div>
+            </div>
+            {/* Основное содержимое */}
+            <div className="p-6 space-y-8">
+                {/* Подробное описание */}
+                {details?.about_the_game && (
+                    <div className="bg-gray-700/30 rounded-xl p-5">
+                        <h2 className="text-xl font-bold text-white mb-4">About the Game</h2>
+                        <div
+                            className="prose prose-invert max-w-none text-gray-300"
+                            dangerouslySetInnerHTML={{ __html: details.about_the_game }}
+                        />
+                        {details?.website && (
+                            <a
+                                href={details.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center mt-4 text-blue-400 hover:text-blue-300"
+                            >
+                                Visit official website
+                                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                    <path
+                                        d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                                </svg>
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {/* Друзья с этой игрой и их достижения */}
+                {details?.friends && details.friends.length > 0 && (
+                    <div className="bg-gray-700/30 rounded-xl p-5">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
+                            </svg>
+                            Friends with this game ({details.friends.length})
+                        </h2>
+
+                        <div className="space-y-4">
+                            {details.friends.map(friend => (
+                                <div key={friend.steamid} className="bg-gray-700/50 rounded-lg p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <img
+                                            src={friend.avatar}
+                                            alt={friend.personaname}
+                                            className="w-10 h-10 rounded-full"
+                                        />
+                                        <div>
+                                            <h3 className="font-medium text-white">{friend.personaname}</h3>
+                                            <p className="text-xs text-gray-400">Playing now</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Достижения друга */}
+                                    <div className="pl-13">
+                                        <h4 className="text-sm font-medium text-gray-300 mb-2">Recent Achievements</h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            {friend.achievements?.slice(0, 3).map(achievement => (
+                                                <div key={`${friend.steamid}-${achievement.name}`}
+                                                     className="bg-gray-600/30 rounded p-2 flex items-center gap-2">
+                                                    <img
+                                                        src={achievement.icon || ''}
+                                                        alt={achievement.name}
+                                                        className="w-8 h-8"
+                                                    />
+                                                    <div className="truncate">
+                                                        <p className="text-xs font-medium text-white truncate">{achievement.name}</p>
+                                                        <p className="text-xs text-gray-400">Unlocked</p>
+                                                    </div>
+                                                </div>
+                                            )) || (
+                                                <p className="text-xs text-gray-500">No achievements data</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Достижения */}
+                <div className="bg-gray-700/30 rounded-xl p-5">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd"
+                                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                      clipRule="evenodd" />
+                            </svg>
+                            Achievements ({unlockedAchievements.length}/{details?.achievements?.length || 0})
+                        </h2>
+
+                        {/* Прогресс-бар */}
+                        <div className="w-full sm:w-64">
+                            <div className="flex justify-between text-sm text-gray-400 mb-1">
+                                <span>Completion</span>
+                                <span>{Math.round((unlockedAchievements.length / (details?.achievements?.length || 1)) * 100)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-2.5">
+                                <div
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2.5 rounded-full"
+                                    style={{
+                                        width: `${(unlockedAchievements.length / (details?.achievements?.length || 1)) * 100}%`
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Разблокированные достижения */}
+                    {unlockedAchievements.length > 0 && (
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold text-green-400 flex items-center gap-2">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd"
+                                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                              clipRule="evenodd" />
+                                    </svg>
+                                    Unlocked ({unlockedAchievements.length})
+                                </h3>
+                                <button className="text-xs text-gray-400 hover:text-white">
+                                    View all
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {unlockedAchievements.slice(0, 4).map(achievement => (
+                                    <EnhancedAchievementCard
+                                        key={achievement.name}
+                                        achievement={achievement}
+                                        unlocked={true}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Заблокированные достижения */}
+                    {lockedAchievements.length > 0 && (
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold text-red-400 flex items-center gap-2">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd"
+                                              d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                              clipRule="evenodd" />
+                                    </svg>
+                                    Locked ({lockedAchievements.length})
+                                </h3>
+                                <button className="text-xs text-gray-400 hover:text-white">
+                                    View all
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {lockedAchievements.slice(0, 4).map(achievement => (
+                                    <EnhancedAchievementCard
+                                        key={achievement.name}
+                                        achievement={achievement}
+                                        unlocked={false}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {achievementsArray.length === 0 && (
+                        <div className="text-center py-6 text-gray-500">
+                            This game has no achievements
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function EnhancedAchievementCard({ achievement, unlocked }: {
+    achievement: Achievement;
+    unlocked: boolean;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const hasDetails = achievement.description || (unlocked && achievement.unlocktime);
+
+    return (
+        <div
+            className={`p-4 rounded-lg transition-all ${
+                unlocked
+                    ? 'bg-green-900/10 hover:bg-green-900/20'
+                    : 'bg-gray-700/30 hover:bg-gray-700/50'
+            } ${hasDetails ? 'cursor-pointer' : ''}`}
+            onClick={() => hasDetails && setExpanded(!expanded)}
+        >
+            <div className="flex items-start gap-4">
+                {/* Иконка достижения */}
+                <div className={`relative flex-shrink-0 ${
+                    unlocked ? 'text-green-400' : 'text-gray-500'
+                }`}>
+                    <div className={`p-1 rounded-lg ${
+                        unlocked ? 'bg-green-500/10' : 'bg-gray-600/30'
+                    }`}>
+                        <img
+                            src={achievement.icon || ''}
+                            alt={achievement.name}
+                            className="w-14 h-14 object-cover"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '';
+                            }}
+                        />
+                    </div>
+                    {unlocked && (
+                        <div
+                            className="absolute -top-2 -right-2 bg-green-500 rounded-full w-5 h-5 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                    )}
+                </div>
+
+                {/* Основное содержимое */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <h4 className={`font-medium ${
+                                unlocked ? 'text-green-300' : 'text-gray-300'
+                            }`}>
+                                {achievement.name}
+                            </h4>
+                            {achievement.description && expanded && (
+                                <p className="text-sm text-gray-400 mt-1 animate-fadeIn">
+                                    {achievement.description}
+                                </p>
+                            )}
+                        </div>
+                        {hasDetails && (
+                            <button
+                                className="text-gray-400 hover:text-white transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpanded(!expanded);
+                                }}
+                            >
+                                <svg
+                                    className={`w-5 h-5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Дополнительные детали */}
+                    {expanded && (
+                        <div className="mt-2 space-y-1 animate-fadeIn">
+                            {unlocked && achievement.unlocktime && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                    </svg>
+                                    Unlocked on {new Date(achievement.unlocktime * 1000).toLocaleDateString()}
+                                </div>
+                            )}
+                            <div className="flex items-center text-xs text-gray-500">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" clipRule="evenodd" />
+                                </svg>
+                                {unlocked ? 'Achievement unlocked' : 'Not achieved yet'}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Статус */}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    unlocked ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/50 text-gray-500'
+                }`}>
+                    {unlocked ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                    ) : (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                    )}
+                </div>
+            </div>
+
+            {/* Прогресс (если нужно) */}
+            {!unlocked && (
+                <div className="mt-2">
+                    <div className="w-full bg-gray-700 rounded-full h-1.5">
+                        <div
+                            className="bg-blue-500 h-1.5 rounded-full"
+                            style={{ width: '0%' }} // Здесь можно добавить прогресс, если он есть
+                        ></div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1 text-right">0% completed</p>
+                </div>
+            )}
+        </div>
+    );
+}
