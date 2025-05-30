@@ -34,7 +34,7 @@ class GamesListController extends Controller
             $games = $this->steamService->getUserGames($steamId);
 
             // Получаем друзей с их данными
-            $friends = $this->getFriendsWithSummaries($steamId);
+            $friends = $this->steamService->getUserFriends($steamId);
 
             $completedGames = auth()->user()
                 ? CompletedGame::where('user_id', auth()->id())
