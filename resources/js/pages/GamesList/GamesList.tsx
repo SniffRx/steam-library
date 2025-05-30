@@ -1,198 +1,213 @@
-import { useEffect, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, usePage } from '@inertiajs/react';
-import { BreadcrumbItem } from '@/types';
-import GameCard from './Components/GameCard';
-import EnhancedGameDetailsView from './Components/EnhancedGameDetailsView';
-import { Game, GameDetails, PageProps } from './Types/GameTypes';
+import AppLayout from '@/layouts/app-layout';
+import GameCard from './components/GameCard';
+import MiniGameCard from './components/MiniGameCard';
+import GameDetailsView from './components/GameDetailsView';
+import { motion } from 'framer-motion';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Games List', href: '/gameslist' }
-];
+interface Game {
+    appid: number;
+    name: string;
+    playtime_forever: number;
+    img_icon_url: string;
+    playtime_2weeks?: number;
+}
 
-export default function Gameslist({ completedGames }: { completedGames: number[] }) {
-    const { games, friends, error } = usePage<PageProps>().props;
-    const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-    const [gameDetails, setGameDetails] = useState<GameDetails | null>(null);
-    const [loadingDetails, setLoadingDetails] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+interface Friend {
+    steamid: string;
+    personaname: string;
+    avatar: string;
+    gameextrainfo?: string;
+}
+
+interface Achievement {
+    apiname: string;
+    achieved: boolean;
+    unlocktime: number;
+    name?: string;
+    description?: string;
+    icon?: string;
+}
+
+interface Props {
+    games: Game[];
+    friends: Friend[];
+    completedGames: number[];
+    error?: string;
+}
+
+export default function GamesList() {
+    const { games: initialGames, friends, completedGames, error } = usePage<Props>().props;
+
     const [localCompleted, setLocalCompleted] = useState<number[]>(completedGames);
-    const [sortOption, setSortOption] = useState<'time' | 'name' | 'completed'>('time');
+    const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+    const [gameDetails, setGameDetails] = useState<{
+        achievements: Achievement[];
+        friendsPlaying: Friend[];
+    } | null>(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'all',
+        sort: 'recent'
+    });
+    const [searchInput, setSearchInput] = useState(filters.search);
+    const [loading, setLoading] = useState(false);
 
-    // Функция для отправки на сервер
+    // Кэширование данных о деталях игр
+    const [detailsCache, setDetailsCache] = useState<Record<number, any>>({});
+
+    // Фильтрация и сортировка
+    const filteredGames = useMemo(() => {
+        if (!initialGames.length) return [];
+
+        let result = [...initialGames];
+
+        // Поиск
+        if (searchInput) {
+            const lowerSearch = searchInput.toLowerCase();
+            result = result.filter(game =>
+                game.name.toLowerCase().includes(lowerSearch)
+            );
+        }
+
+        // Статус
+        if (filters.status === 'completed') {
+            result = result.filter(game => localCompleted.includes(game.appid));
+        } else if (filters.status === 'in-progress') {
+            result = result.filter(game => !localCompleted.includes(game.appid));
+        }
+
+        // Сортировка
+        result.sort((a, b) => {
+            if (filters.sort === 'playtime') {
+                return b.playtime_forever - a.playtime_forever;
+            } else if (filters.sort === 'name') {
+                return a.name.localeCompare(b.name);
+            } else {
+                return (b.playtime_2weeks || 0) - (a.playtime_2weeks || 0);
+            }
+        });
+
+        return result;
+    }, [initialGames, searchInput, filters, localCompleted]);
+
+    // Дебаунс для поиска
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setFilters(prev => ({ ...prev, search: searchInput }));
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+    };
+
     const handleCompletionToggle = async (gameId: number) => {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
         try {
-            const res = await fetch(`/gameslist/${gameId}/toggle-completion`, {
+            setLoading(true);
+            const response = await fetch(`/gameslist/${gameId}/toggle-completion`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                credentials: 'include', // важно для Laravel сессии
-                body: JSON.stringify({})
+                credentials: 'include'
             });
 
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            if (!response.ok) throw new Error('Failed to toggle completion');
+            const data = await response.json();
 
-            const data = await res.json();
-
-            if (data.is_completed !== undefined) {
-                setLocalCompleted(prev =>
-                    data.is_completed
-                        ? [...prev, gameId]
-                        : prev.filter(id => id !== gameId)
-                );
-            }
+            setLocalCompleted(prev =>
+                data.is_completed ? [...prev, gameId] : prev.filter(id => id !== gameId)
+            );
         } catch (err) {
-            console.error('Ошибка при отметке как завершённого:', err);
-        }
-    };
-
-// Автоматическое завершение по достижениям
-    useEffect(() => {
-        if (!selectedGame || !gameDetails) return;
-
-        const totalAchievements = gameDetails.achievements?.length || 0;
-        const unlockedCount = gameDetails.achievements?.filter(a => a.achieved).length || 0;
-
-        if (
-            totalAchievements > 0 &&
-            unlockedCount === totalAchievements &&
-            !localCompleted.includes(selectedGame?.appid)
-        ) {
-            handleCompletionToggle(selectedGame.appid);
-        }
-    }, [gameDetails, selectedGame]);
-
-    const handleGameSelect = async (game: Game) => {
-        setSelectedGame(game);
-        setLoadingDetails(true);
-        try {
-            const response = await fetch(`/steam/game/${game.appid}`, {
-                credentials: 'include',
-                headers: {
-                    Accept: 'application/json'
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch game details');
-
-            const contentType = response.headers.get('Content-Type');
-            if (!contentType?.includes('application/json')) {
-                const errorText = await response.text();
-                throw new Error(`Invalid JSON response: ${errorText}`);
-            }
-
-            const details: GameDetails = await response.json();
-
-            const gameFriends = friends.filter(f => f.gameid === game.appid.toString());
-
-            if (!Array.isArray(details.achievements)) {
-                details.achievements = [];
-            }
-
-            // Загружаем статус завершённости
-            const completionRes = await fetch(`/gameslist/${game.appid}/completion-status`);
-            const completionData = await completionRes.json();
-
-            if (completionData.is_completed) {
-                setLocalCompleted(prev => [...prev, game.appid]);
-            }
-
-            setGameDetails({
-                ...details,
-                friends: gameFriends
-            });
-
-            // Автоматическая пометка завершения при полной разблокировке достижений
-            if (
-                details.achievements &&
-                details.achievements.length > 0 &&
-                details.achievements.every(a => a.achieved) &&
-                !localCompleted.includes(game.appid)
-            ) {
-                await handleCompletionToggle(game.appid);
-            }
-
-        } catch (err) {
-            console.error('Error loading game details:', err);
+            console.error('Error toggling completion:', err);
         } finally {
-            setLoadingDetails(false);
+            setLoading(false);
         }
     };
 
-    // Фильтрация по названию игры
-    const filteredByName = games.filter(game =>
-        game.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const fetchGameDetails = async (game: Game) => {
+        setSelectedGame(game);
 
-    // Сортировка
-    const sortedGames = [...filteredByName].sort((a, b) => {
-        if (sortOption === 'time') {
-            return b.playtime_forever - a.playtime_forever;
-        } else if (sortOption === 'name') {
-            return a.name.localeCompare(b.name);
-        } else if (sortOption === 'completed') {
-            const aCompleted = localCompleted.includes(a.appid) ? 1 : 0;
-            const bCompleted = localCompleted.includes(b.appid) ? 1 : 0;
-            return bCompleted - aCompleted || a.name.localeCompare(b.name); // completed first, then by name
+        if (detailsCache[game.appid]) {
+            setGameDetails(detailsCache[game.appid]);
+            return;
         }
-        return 0;
-    });
+
+        setLoading(true);
+        try {
+            const [achievementsRes, friendsRes] = await Promise.all([
+                fetch(`/steam/game/${game.appid}/details`),
+                fetch(`/steam/game/${game.appid}/friends`)
+            ]);
+
+            if (!achievementsRes.ok || !friendsRes.ok) {
+                throw new Error('Failed to load game details');
+            }
+
+            const data = await achievementsRes.json(); // Это уже содержит и achievements, и game_info
+            const friendsData = await friendsRes.json();
+
+            const details = {
+                achievements: data.achievements || [],
+                game_info: data.game_info || {},
+                friendsPlaying: friendsData.friendsPlaying || []
+            };
+
+            setGameDetails(details);
+            setDetailsCache(prev => ({ ...prev, [game.appid]: details }));
+        } catch (err) {
+            console.error('Failed to load full game details:', err);
+            setGameDetails({
+                achievements: [],
+                game_info: {},
+                friendsPlaying: []
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCloseDetails = () => {
+        setSelectedGame(null);
+        setGameDetails(null);
+    };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Games List" />
-            <div className="max-w-8xl mx-auto px-4 py-6">
-                {error && (
-                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg">
-                        {error}
+            <div className="max-w-screen-2xl mx-auto px-4 py-6">
+                {/* Хедер */}
+                <div className="bg-gray-800 rounded-lg p-6 mb-6">
+                    <h1 className="text-3xl font-bold text-white mb-2">My Game Library</h1>
+                    <div className="flex items-center space-x-4 text-gray-400">
+                        <span>Total games: {initialGames.length}</span>
+                        <span>•</span>
+                        <span>Friends online: {friends.length}</span>
                     </div>
-                )}
-
-                {/* Фильтры и сортировка */}
-                <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-
-                    {/* Категории */}
-                    {/*{availableCategories.length > 0 && (*/}
-                    {/*    <div className="flex items-center gap-2">*/}
-                    {/*        <label htmlFor="category-filter" className="text-sm text-gray-400 min-w-[70px]">Genre:</label>*/}
-                    {/*        <select*/}
-                    {/*            id="category-filter"*/}
-                    {/*            value={filterCategory}*/}
-                    {/*            onChange={(e) => setFilterCategory(e.target.value)}*/}
-                    {/*            className="bg-gray-700/50 border border-gray-600 rounded-lg py-2 px-4 text-white w-full"*/}
-                    {/*        >*/}
-                    {/*            <option value="all">All</option>*/}
-                    {/*            {availableCategories.map((cat, idx) => (*/}
-                    {/*                <option key={idx} value={cat}>{cat}</option>*/}
-                    {/*            ))}*/}
-                    {/*        </select>*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
                 </div>
 
-                {/* Основной контент */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Левая колонка - список игр */}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    {/* Левая колонка: Filters */}
                     <div className="lg:col-span-1">
-                        <div className="bg-gray-800/50 rounded-xl shadow-lg p-6">
-                            {/* Поиск и сортировка */}
-                            <div className="mb-6 flex justify-end gap-4 items-center">
-                                <div className="relative w-full max-w-xs">
+                        <div className="bg-gray-800 rounded-lg p-4 sticky top-4">
+                            <h2 className="text-xl font-semibold text-white mb-4">Filters</h2>
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Search</label>
+                                <div className="relative">
                                     <input
                                         type="text"
-                                        placeholder="Search by name..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Game name..."
                                         className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 pl-4 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
                                     />
                                     <svg
-                                        className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none"
+                                        className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -201,68 +216,162 @@ export default function Gameslist({ completedGames }: { completedGames: number[]
                                               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
+                            </div>
 
-                                {/* Выпадающий список для сортировки */}
-                                <div className="flex items-center gap-2 min-w-[180px]">
-                                    <label htmlFor="sort-select" className="text-sm text-gray-400 whitespace-nowrap">Sort
-                                        by:</label>
-                                    <select
-                                        id="sort-select"
-                                        value={sortOption}
-                                        onChange={(e) => setSortOption(e.target.value as 'time' | 'name')}
-                                        className="bg-gray-700/50 border border-gray-600 rounded-lg py-2 px-3 text-white w-full"
-                                    >
-                                        <option value="time">Time Played</option>
-                                        <option value="completed">Completed First</option>
-                                        <option value="name">Name (A → Z)</option>
-                                    </select>
+                            <div className="space-y-6">
+                                <h3 className="text-md font-medium text-gray-300 mb-3">Sort By</h3>
+                                <select
+                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 px-3 text-white"
+                                    onChange={(e) =>
+                                        handleFilterChange({
+                                            sort: e.target.value === 'Alphabetical' ? 'name' : e.target.value === 'Play Time' ? 'playtime' : 'recent'
+                                        })
+                                    }
+                                    value={
+                                        filters.sort === 'name'
+                                            ? 'Alphabetical'
+                                            : filters.sort === 'playtime'
+                                                ? 'Play Time'
+                                                : 'Recently Played'
+                                    }
+                                >
+                                    <option>Recently Played</option>
+                                    <option>Alphabetical</option>
+                                    <option>Play Time</option>
+                                </select>
+
+                                <h3 className="text-md font-medium text-gray-300 mb-3">Status</h3>
+                                <div className="space-y-2">
+                                    <label className="flex items-center space-x-3">
+                                        <input
+                                            type="radio"
+                                            name="status"
+                                            checked={filters.status === 'all'}
+                                            onChange={() => handleFilterChange({ status: 'all' })}
+                                            className="form-radio h-5 w-5 text-blue-600"
+                                        />
+                                        <span className="text-gray-300">All</span>
+                                    </label>
+                                    <label className="flex items-center space-x-3">
+                                        <input
+                                            type="radio"
+                                            name="status"
+                                            checked={filters.status === 'completed'}
+                                            onChange={() => handleFilterChange({ status: 'completed' })}
+                                            className="form-radio h-5 w-5 text-blue-600"
+                                        />
+                                        <span className="text-gray-300">Completed</span>
+                                    </label>
+                                    <label className="flex items-center space-x-3">
+                                        <input
+                                            type="radio"
+                                            name="status"
+                                            checked={filters.status === 'in-progress'}
+                                            onChange={() => handleFilterChange({ status: 'in-progress' })}
+                                            className="form-radio h-5 w-5 text-blue-600"
+                                        />
+                                        <span className="text-gray-300">In Progress</span>
+                                    </label>
                                 </div>
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-6">Your Games ({sortedGames.length})</h2>
-                            <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-                                {sortedGames.map(game => (
-                                    <GameCard
-                                        key={game.appid}
-                                        game={game}
-                                        isSelected={selectedGame?.appid === game.appid}
-                                        isCompleted={localCompleted.includes(game.appid)}
-                                        onSelect={() => handleGameSelect(game)}
-                                        onCompletion={() => handleCompletionToggle(game.appid)}
-                                    />
-                                ))}
+
+                            <div className="mt-6 pt-4 border-t border-gray-700">
+                                <h3 className="font-medium text-white mb-3">Quick Stats</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Completed:</span>
+                                        <span>{localCompleted.length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">In Progress:</span>
+                                        <span>{initialGames.length - localCompleted.length}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Правая колонка - детали */}
-                    <div className="lg:col-span-2">
-                        {loadingDetails ? (
-                            <div
-                                className="bg-gray-800/50 rounded-xl shadow-lg p-6 flex items-center justify-center h-[600px]">
-                                <div
-                                    className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                            </div>
-                        ) : selectedGame ? (
-                            <EnhancedGameDetailsView
-                                game={selectedGame}
-                                details={gameDetails}
-                                isCompleted={localCompleted.includes(selectedGame.appid)}
-                                onCompletion={() => handleCompletionToggle(selectedGame.appid)}
-                            />
-                        ) : (
-                            <div
-                                className="bg-gray-800/50 rounded-xl shadow-lg p-6 flex items-center justify-center h-64">
-                                <div className="text-center text-gray-400">
-                                    <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1"
-                                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0 -3.332.477 -4.5 1.253" />
-                                    </svg>
-                                    <p className="mt-2">Select a game to view details</p>
+                        {/* Мини-список "My Games", если выбрана игра */}
+                        {selectedGame && (
+                            <div className="sticky top-140 mt-6">
+                                <div className="bg-gray-800/80 rounded-xl p-6 border border-gray-700">
+                                    <h2 className="text-xl font-bold text-white mb-4">
+                                        Selected Game
+                                    </h2>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <MiniGameCard
+                                            game={selectedGame}
+                                            isCompleted={localCompleted.includes(selectedGame.appid)}
+                                            onGameSelect={() => fetchGameDetails(selectedGame)}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
+
+                    {/* Основное содержимое */}
+                    {!selectedGame ? (
+                        <div className="lg:col-span-4">
+                            {error ? (
+                                <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-6 text-red-300">
+                                    {error}
+                                </div>
+                            ) : initialGames.length === 0 ? (
+                                <div className="text-center text-gray-400">No games found.</div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {/* Блок "My Games" */}
+                                    <div className="bg-gray-800/80 rounded-xl p-6 shadow-lg border border-gray-700">
+                                        <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
+                                            <div className="flex justify-between items-center">
+                                                <h2 className="text-xl font-bold text-white">
+                                                    My Games{' '}
+                                                    <span className="text-gray-400 text-sm">({filteredGames.length})</span>
+                                                </h2>
+                                                <div className="text-sm text-gray-400">
+                                                    <span className="text-green-500">{localCompleted.length} completed</span>
+                                                    {' • '}
+                                                    <span>{filteredGames.length - localCompleted.length} remaining</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Грид игр */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {filteredGames.map(game => (
+                                                <GameCard
+                                                    key={game.appid}
+                                                    game={game}
+                                                    isCompleted={localCompleted.includes(game.appid)}
+                                                    onCompletionToggle={() => handleCompletionToggle(game.appid)}
+                                                    onGameSelect={() => fetchGameDetails(game)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.4 }}
+                            className="lg:col-span-4"
+                        >
+                            <GameDetailsView
+                                game={selectedGame}
+                                details={{
+                                    achievements: gameDetails?.achievements || [],
+                                    friendsPlaying: gameDetails?.friendsPlaying || [],
+                                    game_info: gameDetails?.game_info || {}
+                                }}
+                                loading={loading}
+                                onClose={handleCloseDetails}
+                            />
+                        </motion.div>
+                    )}
                 </div>
             </div>
         </AppLayout>
