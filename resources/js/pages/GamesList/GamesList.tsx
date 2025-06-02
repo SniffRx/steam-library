@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import GameCard from './components/GameCard';
 import MiniGameCard from './components/MiniGameCard';
-import GameDetailsView from './components/GameDetailsView';
+import GameDetailsView from './components/gameDetailsView/GameDetailsView';
 import { motion } from 'framer-motion';
 
 interface Game {
