@@ -1,85 +1,81 @@
 import { router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
+import { Users, MessageCircle, ExternalLink, Gamepad2 } from 'lucide-react';
+import UserRecentlyGames from '@/pages/userPage/components/UserRecentlyGames';
 
-export const UserFriends = ({userFriends, userInfo}) => {
+export const UserFriends = ({ userFriends, userInfo }) => {
     return (
-        <div className="rounded-xl border border-[#66C0F4]/20 bg-[#1B2838]/50 p-6">
-            <h2 className="mb-4 text-xl font-bold text-[#66C0F4]">Друзья онлайн ({userFriends.online_friends_count})</h2>
-            <div className="space-y-3">
-                {userFriends?.online_friends?.map((friend, index) => (
-                    <div
-                        key={index}
-                        className="flex items-center gap-3 rounded-lg border border-[#66C0F4]/10 bg-[#0E1621]/70 p-3 transition-all hover:bg-[#0E1621]"
-                    >
-                        <div className="relative">
-                            <div className="h-10 w-10 rounded-full bg-[#2c5364]">
-                                <img className="rounded-full" src={friend.avatarfull} />
-                            </div>
-                            <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-[#1B2838] bg-green-500"></span>
-                        </div>
-                        <div className="min-w-0 flex-1" onClick={() => router.visit(`/steam/user/${friend.steamid}`)}>
-                            <h3 className="truncate font-medium">{friend.personaname}</h3>
-                            <div className="truncate text-sm text-[#C7D5E0]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:border-white/20 hover:shadow-xl hover:shadow-white/5">
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+
+            <div className="relative mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-gradient-to-br from-emerald-500/20 to-green-600/20 p-2.5 shadow-lg shadow-emerald-500/20">
+                        <Users className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <div>
+                        <h2 className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-xl font-bold text-transparent">
+                            Друзья онлайн
+                        </h2>
+                        <p className="text-sm text-gray-400">{userFriends.online_friends_count} в сети</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="relative space-y-3">
+                {userFriends.online_friends.map((friend, index) => (
+                    <motion.div key={friend.steamid} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 + index * 0.05 }} whileHover={{ scale: 1.01, x: 4 }} onClick={() => router.visit(`/steam/user/${friend.steamid}`)} className="group/friend relative cursor-pointer overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-r from-white/5 to-white/[0.02] p-4 backdrop-blur-sm transition-all hover:border-white/10 hover:shadow-lg">
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 transition-opacity group-hover/friend:opacity-100" />
+
+                        <div className="relative flex items-center gap-4">
+                            <motion.img whileHover={{ scale: 1.05 }} className="h-12 w-12 rounded-full border-2 border-white/20 shadow-lg" src={friend.avatarfull} alt={friend.personaname} />
+                            <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-gray-900 bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+
+                            <div className="min-w-0 flex-1">
+                                <h3 className="truncate font-semibold text-white">{friend.personaname}</h3>
+
                                 {friend.gameextrainfo ? (
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1 flex items-center gap-2">
-                                        <motion.a
-                                            whileHover={{ scale: 1.1 }}
-                                            href={`https://store.steampowered.com/app/${friend.gameid}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group relative"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <img
-                                                src={`https://steamcdn-a.akamaihd.net/steam/apps/${friend.gameid}/capsule_184x69.jpg`}
-                                                alt={friend.gameextrainfo}
-                                                className="h-8 w-8 rounded-sm border border-[#66C0F4]/30 object-cover transition-all group-hover:border-[#66C0F4]"
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = '';
-                                                }}
-                                            />
-                                            <span className="absolute z-10 mt-1 hidden rounded-lg border border-[#66C0F4]/20 bg-[#1B2838] p-2 text-xs whitespace-nowrap text-[#66C0F4] group-hover:block">
-                                                {friend.gameextrainfo}
-                                            </span>
-                                        </motion.a>
-                                        <p className="truncate text-sm text-[#C7D5E0]">
-                                            Playing <span className="font-medium text-[#66C0F4]">{friend.gameextrainfo}</span>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 flex items-center gap-2">
+                                        <Gamepad2 className="h-3.5 w-3.5 text-blue-400" />
+                                        <p className="truncate text-sm text-gray-400">
+                                            <span className="text-blue-400 font-medium">{friend.gameextrainfo}</span>
                                         </p>
                                     </motion.div>
                                 ) : (
-                                    <p className="mt-1 text-sm text-[#C7D5E0]">
-                                        {friend.personastate === 1 ? 'Online' : friend.personastate === 2 ? 'Busy' : 'Away'}
+                                    <p className="mt-1 text-sm text-gray-400">
+                                        {friend.personastate === 1 ? 'В сети' : friend.personastate === 2 ? 'Занят' : 'Отошёл'}
                                     </p>
                                 )}
                             </div>
+
+                            <div className="flex gap-2">
+                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="rounded-xl bg-white/5 p-2 text-gray-400 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white" onClick={(e) => { e.stopPropagation(); window.location.href = `steam://friends/message/${friend.steamid}`; }} title="Написать в Steam">
+                                    <MessageCircle className="h-4 w-4" />
+                                </motion.button>
+
+                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="rounded-xl bg-white/5 p-2 text-gray-400 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white" onClick={(e) => { e.stopPropagation(); window.open(friend.profileurl, '_blank'); }} title="Steam профиль">
+                                    <ExternalLink className="h-4 w-4" />
+                                </motion.button>
+                            </div>
                         </div>
-                        <button
-                            className="rounded bg-[#66C0F4]/10 px-2 py-1 text-xs text-[#66C0F4] hover:bg-[#66C0F4]/20"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(friend.profileurl, '_blank');
-                            }}
-                        >
-                            Steam профиль
-                        </button>
-                        <button
-                            className="rounded bg-[#66C0F4]/10 px-2 py-1 text-xs text-[#66C0F4] hover:bg-[#66C0F4]/20"
-                            onClick={() => window.location.href = `steam://friends/message/${friend.steamid}`}
-                        >
-                            Написать в Steam
-                        </button>
-                    </div>
+
+                        {friend.gameextrainfo && friend.gameid && (
+                            <motion.a initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} href={`https://store.steampowered.com/app/${friend.gameid}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} whileHover={{ scale: 1.02 }} className="relative mt-3 block overflow-hidden rounded-xl border border-white/10">
+                                <img src={`https://steamcdn-a.akamaihd.net/steam/apps/${friend.gameid}/capsule_184x69.jpg`} alt={friend.gameextrainfo} className="h-16 w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                            </motion.a>
+                        )}
+                    </motion.div>
                 ))}
             </div>
-            <button
-                className="mt-4 w-full rounded-lg border border-[#66C0F4]/30 bg-[#66C0F4]/10 py-2 text-sm text-[#66C0F4] transition-all hover:bg-[#66C0F4]/20"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(userInfo.profileurl + 'friends', '_blank');
-                }}
-            >
-                Показать всех друзей
-            </button>
-        </div>
+
+            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="relative mt-6 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.02] py-3 text-sm font-semibold text-white backdrop-blur-md transition-all hover:border-white/20 hover:shadow-lg" onClick={(e) => { e.stopPropagation(); window.open(userInfo.profileurl + 'friends', '_blank'); }}>
+                <div className="relative flex items-center justify-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Показать всех друзей</span>
+                </div>
+            </motion.button>
+        </motion.div>
     );
-}
+};
+export default UserFriends;
