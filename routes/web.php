@@ -11,7 +11,12 @@ Route::get('/', function () {
     return Inertia::render('Welcome/welcome');
 })->name('home');
 
-Route::get('/health', function () { return json_encode(['status' => 'OK']);});
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String()
+    ]);
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -22,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('steam')->middleware('auth')->group(function () {
         // Информация о пользователе
         Route::get('user', [SteamController::class, 'getUserInfo'])->name('steam.user.info');
+        Route::get('user/search', [SteamController::class, 'searchUsers'])->name('steam.user.search');
         Route::get('user/{steamId}', [SteamController::class, 'getUser'])->name('steam.user.profile');
 
         // Игры пользователя
@@ -40,8 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 //       Route::get('user/{steamId}', [SteamController::class, 'getUser'])->name('steam.user');
 //    });
 
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('gameslist', [GamesListController::class, 'index'])->name('games.list');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/gameslist', [GamesListController::class, 'index'])->name('gameslist');
 
     // Список с играми
     Route::prefix('gameslist')->group(function () {
@@ -51,6 +57,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('game.completion_status');
         Route::get('/{appid}/auto-complete', [GameCompletionController::class, 'autoCompleteIfAllAchievementsDone'])
             ->name('game.auto_complete');
+        // НОВЫЕ РОУТЫ для синхронизации
+        Route::post('/sync-all', [GameCompletionController::class, 'syncAll'])
+            ->name('game.sync_all');
+        Route::get('/sync-progress', [GameCompletionController::class, 'syncProgress'])
+            ->name('game.sync_progress');
+
+        // Устаревший роут для совместимости
+        Route::post('check-all', [GameCompletionController::class, 'checkAll']);
     });
 
 //    Route::prefix('steam')->group(function () {

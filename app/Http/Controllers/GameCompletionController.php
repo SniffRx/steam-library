@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncUserCompletedGamesJob;
 use App\Models\CompletedGame;
 use App\Services\Steam\SteamService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class GameCompletionController extends Controller
@@ -24,7 +28,11 @@ class GameCompletionController extends Controller
         ]);
 
         $completion->is_completed = !$completion->is_completed;
+        $completion->completed_at = $completion->is_completed ? now() : null;
         $completion->save();
+
+        // Инвалидируем кеш
+        Cache::forget("user:{$user->id}:completed_games");
 
         return response()->json([
             'is_completed' => $completion->is_completed,
@@ -63,48 +71,134 @@ class GameCompletionController extends Controller
 
         // Получаем достижения через SteamService
         try {
-            $steamService = app(SteamService::class);
-            $achievements = $steamService->getGameAchievements($user->steamID, $appid);
+            $achievements = $this->steamService->getGameAchievements($appid, $user->steamID);
+//            $steamService = app(SteamService::class);
+//            $achievements = $steamService->getGameAchievements($user->steamID, $appid);
 
-            if (!$achievements || count($achievements) === 0) {
-                return response()->json([
-                    'skipped' => true,
-                    'reason' => 'No achievements found for this game'
-                ]);
+            if (empty($achievements)) {
+                return response()->json(['skipped' => true, 'reason' => 'No achievements']);
             }
+
+//            if (!$achievements || count($achievements) === 0) {
+//                return response()->json([
+//                    'skipped' => true,
+//                    'reason' => 'No achievements found for this game'
+//                ]);
+//            }
 
             // Проверяем, все ли достижения получены
             $allUnlocked = collect($achievements)
-                ->every(fn($achievement) => $achievement['achieved'] == 1);
+                ->every(fn($achievement) => ($achievement['achieved'] ?? 0) == 1);
 
             if ($allUnlocked) {
-                CompletedGame::updateOrCreate(
-                    [
-                        'user_id' => $user->id,
-                        'game_appid' => $appid,
-                    ],
-                    [
-                        'is_completed' => true,
-                        'completed_at' => now(),
-                    ]
-                );
+                $completion = CompletedGame::firstOrCreate([
+                    'user_id' => $user->id,
+                    'game_appid' => $appid,
+                ]);
+                $completion->is_completed = true;
+                $completion->completed_at = now();
+                $completion->save();
 
-                return response()->json(['is_completed' => true, 'auto_marked' => true]);
+                Cache::forget("user:{$user->id}:completed_games");
+
+                return response()->json([
+                    'completed' => true,
+                    'message' => 'Game auto-completed'
+                ]);
             }
 
-            return response()->json([
-                'is_completed' => false,
-                'auto_marked' => false,
-                'reason' => 'Not all achievements are unlocked'
-            ]);
+//            return response()->json([
+//                'is_completed' => false,
+//                'auto_marked' => false,
+//                'reason' => 'Not all achievements are unlocked'
+//            ]);
+            return response()->json(['completed' => false]);
 
         } catch (Throwable $e) {
-            return response()->json([
-                'error' => 'Failed to fetch or process achievements',
-                'message' => $e->getMessage()
-            ], 500);
+            Log::error("Failed to auto-complete game {$appid}: {$e->getMessage()}");
+            return response()->json(['error' => 'Failed to check achievements'], 500);
+//            return response()->json([
+//                'error' => 'Failed to fetch or process achievements',
+//                'message' => $e->getMessage()
+//            ], 500);
         }
     }
 
+    /**
+     * Проверяем ачивки для всех игр пользователя и помечаем те, где все открыты.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    /**
+     * Устаревший метод - оставлен для совместимости
+     */
+    public function checkAll(): JsonResponse
+    {
+        return $this->syncAll(request());
+    }
 
+    /**
+     * Запускает фоновую синхронизацию всех игр пользователя
+     */
+    public function syncAll(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $cacheKey = "user:{$user->id}:completion_sync_progress";
+
+        // Проверяем, не запущен ли уже процесс
+        $existingProgress = Cache::get($cacheKey);
+
+        if ($existingProgress && $existingProgress['status'] === 'processing') {
+            return response()->json([
+                'message' => 'Sync already in progress',
+                'progress' => $existingProgress
+            ]);
+        }
+
+        // Устанавливаем начальный статус
+        Cache::put($cacheKey, [
+            'status' => 'queued',
+            'progress' => 0,
+            'started_at' => now()->toISOString(),
+        ], 300);
+
+        // Запускаем job
+        $forceRefresh = $request->boolean('force', false);
+        SyncUserCompletedGamesJob::dispatch($user->id, $forceRefresh);
+
+        return response()->json([
+            'message' => 'Sync started',
+//            'check_progress_url' => route('games.completion.progress')
+            'status' => 'queued'
+        ]);
+    }
+
+    /**
+     * Получить текущий прогресс синхронизации
+     */
+    public function syncProgress(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $cacheKey = "user:{$user->id}:completion_sync_progress";
+        $progress = Cache::get($cacheKey);
+
+        if (!$progress) {
+            return response()->json([
+                'status' => 'idle',
+                'message' => 'No sync in progress'
+            ]);
+        }
+
+        return response()->json($progress);
+    }
 }
