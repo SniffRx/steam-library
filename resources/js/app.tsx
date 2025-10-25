@@ -7,9 +7,20 @@ import { initializeTheme } from './hooks/use-appearance';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Типизация страницы
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            refetchOnWindowFocus: false,
+            retry: 1,
+            staleTime: 5 * 60 * 1000, // 5 минут
+        },
+    },
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -18,17 +29,20 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(
-            <AnimatePresence mode="wait">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    // key={props.page.component}
-                >
-                    <App {...props} />
-                </motion.div>
-            </AnimatePresence>
+            <QueryClientProvider client={queryClient}>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        // key={props.page.component}
+                    >
+                        <App {...props} />
+                    </motion.div>
+                </AnimatePresence>
+            </QueryClientProvider>
+
         );
     },
     progress: {
