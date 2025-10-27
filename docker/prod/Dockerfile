@@ -45,7 +45,7 @@ WORKDIR /var/www
 
 # Кэширование зависимостей Composer (копируем только composer.json и lock)
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Копируем весь исходный код Laravel
 COPY . .
