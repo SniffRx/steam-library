@@ -16,7 +16,7 @@ RUN npm run build
 # ⚙️ Stage 2 — Prepare Laravel app with PHP & Composer
 FROM php:8.3-fpm-alpine AS backend
 
-# Установим зависимости
+# Установка системных зависимостей
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -34,34 +34,40 @@ RUN apk add --no-cache \
     nodejs \
     npm
 
-# PHP extensions
+# Установка PHP расширений, включая PostgreSQL
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip intl opcache mbstring exif
 
-# Composer
+# Установка Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Кэширование composer (копируем только для установки зависимостей)
+# Кэширование зависимостей Composer (копируем только composer.json и lock)
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader
 
-# Копируем Laravel backend
+# Копируем весь исходный код Laravel
 COPY . .
 
-# Копируем билд фронта из предыдущего stage
+# Запуск кэширования конфигурации, маршрутов и представлений Laravel
+RUN php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+# Копируем скомпилированный фронтенд билд из предыдущей стадии
 COPY --from=frontend /app/public/build /var/www/public/build
 
-# Права
-RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www/storage
+# Установка прав на каталоги storage и bootstrap/cache
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
 
-# Nginx конфиг
+# Копируем конфигурации Nginx и Supervisord
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
-
-# Supervisor config (одновременный запуск nginx и php-fpm)
 COPY docker/prod/supervisord.conf /etc/supervisord.conf
 
+# Открываем порт 80 для веб-сервера
 EXPOSE 80
 
+# Запускаем supervisord для управления php-fpm и nginx
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
