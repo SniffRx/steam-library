@@ -41,19 +41,20 @@ RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+WORKDIR /var/www
+
+# Кэширование composer (копируем только для установки зависимостей)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader
 
 # Копируем Laravel backend
 COPY . .
 
-# Установка зависимостей Laravel
-RUN composer install --no-dev --optimize-autoloader
-
 # Копируем билд фронта из предыдущего stage
-COPY --from=frontend /app/public/build /var/www/html/public/build
+COPY --from=frontend /app/public/build /var/www/public/build
 
 # Права
-RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html/storage
+RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www/storage
 
 # Nginx конфиг
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
