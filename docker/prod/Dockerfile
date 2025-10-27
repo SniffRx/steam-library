@@ -30,11 +30,13 @@ RUN apk add --no-cache \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
+    postgresql-dev \
     nodejs \
     npm
 
 # PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql zip intl opcache mbstring exif
+RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
+    && docker-php-ext-install pdo pdo_pgsql pgsql zip intl opcache mbstring exif
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
