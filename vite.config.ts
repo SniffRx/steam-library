@@ -14,6 +14,22 @@ export default defineConfig({
         react(),
         tailwindcss()
     ],
+    // server: {
+    //     host: '0.0.0.0',
+    //     port: 5173,
+    //     cors: {
+    //         origin: 'http://192.168.1.141:8000', // ваш IP и порт Laravel
+    //         // или origin: '*' для разработки, но менее безопасно
+    //         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    //         allowedHeaders: ['*'],
+    //         credentials: true,
+    //     },
+    //     hmr: {
+    //         host: '192.168.1.141', // IP сервера для hot reload
+    //         protocol: 'ws',
+    //         port: 5173,
+    //     },
+    // },
     build: {
         outDir: 'public/build', // 👈 это важно для Laravel
         emptyOutDir: true
