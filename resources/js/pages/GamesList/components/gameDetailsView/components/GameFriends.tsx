@@ -30,3 +30,4 @@ export const GameFriends = ({details}) => {
         </section>
     )
 }
+export default GameFriends;

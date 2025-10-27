@@ -65,3 +65,4 @@ export const GameAchievements = ({details, completedAchievements, totalAchieveme
         </section>
     )
 }
+export default GameAchievements;

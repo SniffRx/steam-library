@@ -9,7 +9,7 @@ interface GameCardProps {
     onGameSelect: (game: any) => void;
 }
 
-const GameCard = React.memo(({ game, isCompleted, onCompletionToggle, onGameSelect }: GameCardProps) => {
+export const GameCard = React.memo(({ game, isCompleted, onCompletionToggle, onGameSelect }: GameCardProps) => {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9 }}

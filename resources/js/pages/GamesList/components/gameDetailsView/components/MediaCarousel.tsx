@@ -181,3 +181,4 @@ export const MediaCarousel = ({ info }) => {
         </section>
     );
 };
+export default MediaCarousel;

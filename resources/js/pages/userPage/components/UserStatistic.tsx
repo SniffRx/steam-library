@@ -29,7 +29,7 @@ export const UserStatistic = ({ userGamesCount, userFriends, userRecentlyGames }
         },
         {
             title: 'Часов за 2 недели',
-            value: (userRecentlyGames.games.reduce((sum, game) => sum + game.playtime_2weeks, 0) / 60).toFixed(1),
+            value: ((userRecentlyGames?.games ?? []).reduce((sum, game) => sum + (game.playtime_2weeks ?? 0), 0) / 60).toFixed(1),
             icon: Clock,
             gradient: 'from-amber-500/20 to-yellow-600/20',
             iconColor: 'text-amber-400',

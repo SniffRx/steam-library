@@ -96,6 +96,11 @@ export default function Dashboard() {
                     {!loading && query.length >= 3 && results.length === 0 && (
                         <p className="text-center text-sm text-white/60 italic mt-4">Ничего не найдено</p>
                     )}
+
+                    {/* Подсказка об открытом профиле */}
+                    <div className="mt-6 p-4 rounded-lg bg-blue-900 bg-opacity-40 border border-blue-700 text-blue-300 text-sm">
+                        Чтобы приложения корректно получали информацию о вашем профиле и играх, пожалуйста, разрешите просмотр вашего Steam аккаунта (в настройках приватности Steam). Это необходимо для отображения игрового прогресса.
+                    </div>
                 </motion.div>
             </div>
         </AppLayout>

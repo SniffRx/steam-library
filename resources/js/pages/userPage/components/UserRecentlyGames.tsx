@@ -2,6 +2,10 @@ import { motion } from 'framer-motion';
 import { Clock, Gamepad2 } from 'lucide-react';
 
 export const UserRecentlyGames = ({ userRecentlyGames }) => {
+
+    const games = userRecentlyGames?.games ?? [];
+    const totalCount = userRecentlyGames?.total_count ?? 0;
+
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:border-white/20 hover:shadow-xl hover:shadow-white/5">
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
@@ -12,13 +16,16 @@ export const UserRecentlyGames = ({ userRecentlyGames }) => {
                     </div>
                     <div>
                         <h2 className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-xl font-bold text-transparent">Недавно сыгранные</h2>
-                        <p className="text-sm text-gray-400">{userRecentlyGames.total_count} игр</p>
+                        <p className="text-sm text-gray-400">{totalCount} игр</p>
                     </div>
                 </div>
             </div>
 
             <div className="relative space-y-3">
-                {userRecentlyGames.games.map((game, index) => (
+                {games.length === 0 ? (
+                    <p className="text-gray-500 italic">Нет недавно сыгранных игр</p>
+                ) : (
+                    games.map((game, index) => (
                     <motion.div key={game.appid} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 + index * 0.05 }} whileHover={{ scale: 1.01, x: 4 }} className="group/game relative cursor-pointer overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-r from-white/5 to-white/[0.02] p-4 backdrop-blur-sm transition-all hover:border-white/10 hover:shadow-lg">
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover/game:opacity-100" />
 
@@ -43,7 +50,7 @@ export const UserRecentlyGames = ({ userRecentlyGames }) => {
                             </div>
                         </div>
                     </motion.div>
-                ))}
+                )))}
             </div>
         </motion.div>
     );

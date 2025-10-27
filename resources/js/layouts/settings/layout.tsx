@@ -21,6 +21,11 @@ const sidebarNavItems: NavItem[] = [
         title: 'Appearance',
         href: '/settings/appearance',
         icon: null
+    },
+    {
+        title: 'Devices',
+        href: '/settings/devices',  // новый путь
+        icon: null
     }
 ];
 

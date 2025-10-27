@@ -148,11 +148,11 @@ class GameCompletionController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $cacheKey = "user:{$user->id}:completion_sync_progress";
+        $cacheKeyProgress = "user:{$user->id}:completion_sync_progress";
+        $cacheKeyLastSync = "user:{$user->id}:last_completion_sync_time";
 
         // Проверяем, не запущен ли уже процесс
-        $existingProgress = Cache::get($cacheKey);
-
+        $existingProgress = Cache::get($cacheKeyProgress);
         if ($existingProgress && $existingProgress['status'] === 'processing') {
             return response()->json([
                 'message' => 'Sync already in progress',
@@ -160,20 +160,35 @@ class GameCompletionController extends Controller
             ]);
         }
 
+        // Проверяем время последней успешной синхронизации
+        $lastSync = Cache::get($cacheKeyLastSync);
+        if ($lastSync) {
+            $lastSyncTime = \Carbon\Carbon::parse($lastSync);
+            $now = \Carbon\Carbon::now();
+            if ($now->diffInHours($lastSyncTime) < 24) {
+                return response()->json([
+                    'message' => 'Sync can be run only once every 24 hours',
+                    'last_sync' => $lastSyncTime->toDateTimeString()
+                ], 429);
+            }
+        }
+
         // Устанавливаем начальный статус
-        Cache::put($cacheKey, [
+        Cache::put($cacheKeyProgress, [
             'status' => 'queued',
             'progress' => 0,
             'started_at' => now()->toISOString(),
         ], 300);
 
-        // Запускаем job
+        // Запускаем job синхронизации
         $forceRefresh = $request->boolean('force', false);
         SyncUserCompletedGamesJob::dispatch($user->id, $forceRefresh);
 
+        // Сохраняем время последнего запуска синхронизации
+        Cache::put($cacheKeyLastSync, now(), 24 * 60 * 60); // 24 часа
+
         return response()->json([
             'message' => 'Sync started',
-//            'check_progress_url' => route('games.completion.progress')
             'status' => 'queued'
         ]);
     }

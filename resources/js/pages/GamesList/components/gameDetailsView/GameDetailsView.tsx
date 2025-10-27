@@ -1,57 +1,45 @@
-import { useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseButton } from '@/pages/GamesList/components/gameDetailsView/components/CloseButton';
-import { GameRequirements } from '@/pages/GamesList/components/gameDetailsView/components/GameRequirements';
-import { GameFriends } from '@/pages/GamesList/components/gameDetailsView/components/GameFriends';
-import { GameAchievements } from '@/pages/GamesList/components/gameDetailsView/components/GameAchievements';
 import { GameDetailsProps } from '@/pages/GamesList/components/gameDetailsView/types';
-import { GamePrice } from '@/pages/GamesList/components/gameDetailsView/components/GamePrice';
-import { GameMetacritic } from '@/pages/GamesList/components/gameDetailsView/components/GameMetacritic';
-import { MediaCarousel } from '@/pages/GamesList/components/gameDetailsView/components/MediaCarousel';
-import { Award, Users, Info, Loader2 } from 'lucide-react';
+import { Award, Users, Info } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-export default function GameDetailsView({ game, details, loading, onClose }: GameDetailsProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'achievements' | 'friends'>('overview');
+const GameAchievements = lazy(() => import('./components/GameAchievements'));
+const GameFriends = lazy(() => import('./components/GameFriends'));
+const GameRequirements = lazy(() => import('./components/GameRequirements'));
+const MediaCarousel = lazy(() => import('./components/MediaCarousel'));
+const GamePrice = lazy(() => import('./components/GamePrice'));
+const GameMetacritic = lazy(() => import('./components/GameMetacritic'));
+
+export default function GameDetailsView({ details, loading, onClose }: GameDetailsProps) {
+    const [activeTab, setActiveTab] = useState('overview');
+
+    const info = details.game_info;
+    const completedAchievements = useMemo(() => details.achievements.filter(a => a.achieved).length, [details.achievements]);
+    const totalAchievements = useMemo(() => details.achievements.length, [details.achievements]);
+
+    const tabs = useMemo(() => [
+        { key: 'overview', label: 'Обзор', icon: Info },
+        { key: 'achievements', label: 'Достижения', icon: Award, badge: totalAchievements > 0 ? `${completedAchievements}/${totalAchievements}` : null },
+        { key: 'friends', label: 'Друзья', icon: Users, badge: details.friendsPlaying?.length || null },
+    ], [totalAchievements, completedAchievements, details.friendsPlaying]);
+
+    const SafeHTMLRenderer = useCallback(({ html }) => {
+        const sanitizedHTML = DOMPurify.sanitize(html);
+        return <div className="prose prose-invert max-w-none">{parse(sanitizedHTML)}</div>;
+    }, []);
 
     if (loading || !details?.game_info) {
         return (
-            <div className="flex min-h-[500px] items-center justify-center p-12">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center"
-                >
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                        className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-blue-500 border-t-transparent"
-                    />
-                    <p className="text-gray-400">Загрузка деталей игры...</p>
-                </motion.div>
+            <div className="flex min-h-[500px] flex-col items-center justify-center p-12 text-center text-gray-400">
+                <LoadingSpinner />
+                <p className="mt-4 text-lg">Загрузка деталей игры...</p>
             </div>
         );
     }
-
-    const info = details.game_info;
-    const completedAchievements = details.achievements.filter((a) => a.achieved).length;
-    const totalAchievements = details.achievements.length;
-
-    const SafeHTMLRenderer = ({ html }: { html: string }) => {
-        const sanitizedHTML = DOMPurify.sanitize(html);
-        return (
-            <div className="prose prose-invert max-w-none">
-                {parse(sanitizedHTML)}
-            </div>
-        );
-    };
-
-    const tabs = [
-        { key: 'overview', label: 'Обзор', icon: Info },
-        { key: 'achievements', label: 'Достижения', icon: Award, badge: totalAchievements > 0 ? `${completedAchievements}/${totalAchievements}` : null },
-        { key: 'friends', label: 'Друзья', icon: Users, badge: details.friendsPlaying?.length || null }
-    ];
 
     return (
         <motion.div
@@ -209,11 +197,13 @@ export default function GameDetailsView({ game, details, loading, onClose }: Gam
                         )}
 
                         {activeTab === 'achievements' && (
+                            <Suspense fallback={<div>Загрузка достижений...</div>}>
                             <GameAchievements
                                 details={details}
                                 completedAchievements={completedAchievements}
                                 totalAchievements={totalAchievements}
                             />
+                            </Suspense>
                         )}
 
                         {activeTab === 'friends' && (

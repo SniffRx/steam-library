@@ -134,3 +134,4 @@ const RequirementBox = ({ title, html }) => (
         />
     </motion.div>
 );
+export default GameRequirements;

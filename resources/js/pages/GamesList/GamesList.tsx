@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import GameCard from './components/GameCard';
@@ -66,7 +66,7 @@ export default function GamesList() {
     const [filters, setFilters] = useState({ search: '', status: 'all', sort: 'recent' });
     const [searchInput, setSearchInput] = useState(filters.search);
     const [syncing, setSyncing] = useState(false);
-    const [visibleCount, setVisibleCount] = useState(9);
+    const [visibleCount, setVisibleCount] = useState(() => Math.min(9, initialGames.length));
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     // ✨ React Query для синхронизации
@@ -118,12 +118,7 @@ export default function GamesList() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isLoadingMore, visibleCount]);
 
-    // Сброс при изменении фильтров
-    useEffect(() => {
-        setVisibleCount(9);
-    }, [filters, searchInput]);
-
-    // ✨ Оптимизированная фильтрация с Set
+// ✨ Оптимизированная фильтрация с Set
     const filteredGames = useMemo(() => {
         if (!initialGames.length) return [];
 
@@ -157,6 +152,11 @@ export default function GamesList() {
         });
     }, [initialGames, searchInput, filters.status, filters.sort, localCompleted]);
 
+    // Сброс при изменении фильтров
+    useEffect(() => {
+        setVisibleCount(Math.min(9, filteredGames.length));
+    }, [filters, searchInput, filteredGames.length]);
+
     // Видимые игры для infinite scroll
     const visibleGames = useMemo(() => {
         return filteredGames.slice(0, visibleCount);
@@ -175,6 +175,12 @@ export default function GamesList() {
                 credentials: 'include'
             });
 
+            if (response.status === 429) {
+                const data = await response.json();
+                alert(`Синхронизация разрешена не чаще одного раза в 24 часа.\nПоследний запуск: ${data.last_sync}`);
+                return;
+            }
+
             if (!response.ok) throw new Error('Failed to start sync');
             const data = await response.json();
 
@@ -187,12 +193,12 @@ export default function GamesList() {
     };
 
     // Изменение фильтров
-    const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    const handleFilterChange = useCallback((newFilters: Partial<typeof filters>) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
-    };
+    }, []);
 
     // Переключение завершённости игры
-    const handleCompletionToggle = async (gameId: number) => {
+    const handleCompletionToggle = useCallback(async (gameId: number) => {
         try {
             const response = await fetch(`/gameslist/${gameId}/toggle-completion`, {
                 method: 'POST',
@@ -213,19 +219,19 @@ export default function GamesList() {
         } catch (err) {
             console.error('Error toggling completion:', err);
         }
-    };
+    }, [localCompleted]);
 
     // ✨ Выбор игры (использует React Query)
-    const handleGameSelect = (game: Game) => {
+    const handleGameSelect = useCallback((game: Game) => {
         setSelectedGame(game);
         setSelectedGameId(game.appid);
-    };
+    }, []);
 
     // Закрытие деталей
-    const handleCloseDetails = () => {
+    const handleCloseDetails = useCallback(() => {
         setSelectedGame(null);
         setSelectedGameId(null);
-    };
+    }, []);
 
     // Если первая синхронизация - показываем загрузчик
     if (initialSync) {

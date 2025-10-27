@@ -20,7 +20,7 @@ export const LeftColumn = () => {
             <div className="flex flex-wrap gap-4">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link
-                        href={auth.user ? route('dashboard') : route('register')}
+                        href={auth.user ? route('dashboard') : route('login')}
                         className="inline-block rounded-md bg-[#66C0F4] px-8 py-3 text-base font-medium text-[#1B2838] transition-colors duration-200 hover:bg-[#4FABDD]"
                     >
                         Get Started

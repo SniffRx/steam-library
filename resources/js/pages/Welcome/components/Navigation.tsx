@@ -35,7 +35,7 @@ export const Navigation = () => {
                                 Log in
                             </Link>
                             <Link
-                                href={route('register')}
+                                href={route('login')}
                                 className="inline-block rounded-md bg-[#66C0F4] px-6 py-2 text-sm font-medium text-[#1B2838] hover:bg-[#4FABDD] transition-colors duration-200"
                             >
                                 Register
