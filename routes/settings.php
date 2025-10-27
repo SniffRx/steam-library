@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\DevicesController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -18,4 +19,13 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance');
+
+    // Маршрут для страницы устройств с вызовом контроллера
+    Route::get('settings/devices', [DevicesController::class, 'index'])->name('devices');
+
+    // Маршрут для экшена выхода со всех устройств кроме текущего
+    Route::post('settings/devices/logout-other', [DevicesController::class, 'logoutOtherDevices'])->name('logout.other.devices');
+
+    Route::post('settings/devices/logout/{sessionId}', [DevicesController::class, 'logoutDevice'])->name('logout.device');
+
 });
