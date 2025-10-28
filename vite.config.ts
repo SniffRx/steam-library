@@ -32,8 +32,10 @@ export default defineConfig({
     // },
     build: {
         outDir: 'public/build', // 👈 это важно для Laravel
-        emptyOutDir: true
+        emptyOutDir: true,
+        manifest: true,
     },
+    base: process.env.ASSET_URL ? process.env.ASSET_URL + '/build/' : '/build/',
     esbuild: {
         jsx: 'automatic'
     },
