@@ -1,14 +1,14 @@
-version: '3.8'
-
 services:
     app:
         build:
             context: .
-            dockerfile: docker/php/Dockerfile
+            dockerfile: docker/prod/Dockerfile
         container_name: laravel_app
         restart: unless-stopped
         volumes:
             - .:/var/www
+        ports:
+            - "8080:80"
         environment:
             APP_ENV: production
             APP_KEY: ${APP_KEY}
@@ -18,25 +18,17 @@ services:
             DB_USERNAME: ${DB_USERNAME}
             DB_PASSWORD: ${DB_PASSWORD}
             REDIS_HOST: redis
+            REDIS_CLIENT: phpredis
+            REDIS_PORT: 6379
+            CACHE_STORE: redis
+            SESSION_DRIVER: redis
+            QUEUE_CONNECTION: redis
         depends_on:
             - db
             - redis
         networks:
             - laravel
-
-    nginx:
-        image: nginx:stable-alpine
-        container_name: laravel_nginx
-        ports:
-            - "80:80"
-        volumes:
-            - .:/var/www
-            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-        depends_on:
-            - app
-        networks:
-            - laravel
-
+            - nginx-network
     db:
         image: postgres:16
         container_name: laravel_postgres
@@ -49,7 +41,6 @@ services:
             - pgdata:/var/lib/postgresql/data
         networks:
             - laravel
-
     redis:
         image: docker.dragonflydb.io/dragonflydb/dragonfly
         container_name: laravel_redis
@@ -64,3 +55,6 @@ volumes:
 
 networks:
     laravel:
+        driver: bridge
+    nginx-network:
+        external: true

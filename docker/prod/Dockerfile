@@ -38,6 +38,12 @@ RUN apk add --no-cache \
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip intl opcache mbstring exif
 
+# ← ДОБАВЛЕНО: Установка Redis расширения
+RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del pcre-dev $PHPIZE_DEPS
+
 RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
 
 # Установка Composer
@@ -45,31 +51,31 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Кэширование зависимостей Composer (копируем только composer.json и lock)
+# Кэширование зависимостей Composer
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Копируем весь исходный код Laravel
 COPY . .
 
-# Запуск кэширования конфигурации, маршрутов и представлений Laravel
+# Запуск кэширования конфигурации
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
 
-# Копируем скомпилированный фронтенд билд из предыдущей стадии
+# Копируем скомпилированный фронтенд билд
 COPY --from=frontend /app/public/build /var/www/public/build
 
-# Установка прав на каталоги storage и bootstrap/cache
+# Установка прав на каталоги
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
 
-# Копируем конфигурации Nginx и Supervisord
+# Копируем конфигурации
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 COPY docker/prod/supervisord.conf /etc/supervisord.conf
 
-# Открываем порт 80 для веб-сервера
+# Открываем порт 80
 EXPOSE 80
 
-# Запускаем supervisord для управления php-fpm и nginx
+# Запускаем supervisord
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
