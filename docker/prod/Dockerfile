@@ -38,6 +38,8 @@ RUN apk add --no-cache \
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip intl opcache mbstring exif
 
+RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
+
 # Установка Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
