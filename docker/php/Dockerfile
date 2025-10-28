@@ -20,3 +20,9 @@ RUN composer install --no-dev --optimize-autoloader \
     && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
+
+# Открываем порт 80 для веб-сервера
+EXPOSE 9000
+
+# Запускаем supervisord для управления php-fpm и nginx
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
