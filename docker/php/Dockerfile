@@ -1,9 +1,10 @@
 FROM php:8.3-fpm-alpine
 
-# Установка системных зависимостей
+# Установка системных зависимостей, включая postgresql-dev
 RUN apk add --no-cache \
-    git curl zip unzip libzip-dev libpng-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql zip bcmath
+    git curl zip unzip libzip-dev libpng-dev libxml2-dev postgresql-dev \
+    && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql pgsql zip bcmath
 
 # Установка Composer
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
