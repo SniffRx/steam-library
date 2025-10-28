@@ -71,7 +71,12 @@ class GameCompletionController extends Controller
 
         // Получаем достижения через SteamService
         try {
-            $achievements = $this->steamService->getGameAchievements($appid, $user->steamID);
+            // Кешируем результат на 1 час
+            $cacheKey = "game:{$appid}:user:{$user->steamID}:achievements";
+
+            $achievements = Cache::remember($cacheKey, 3600, function () use ($appid, $user) {
+                return $this->steamService->getGameAchievements($appid, $user->steamID);
+            });
 //            $steamService = app(SteamService::class);
 //            $achievements = $steamService->getGameAchievements($user->steamID, $appid);
 
@@ -91,13 +96,21 @@ class GameCompletionController extends Controller
                 ->every(fn($achievement) => ($achievement['achieved'] ?? 0) == 1);
 
             if ($allUnlocked) {
-                $completion = CompletedGame::firstOrCreate([
-                    'user_id' => $user->id,
-                    'game_appid' => $appid,
-                ]);
-                $completion->is_completed = true;
-                $completion->completed_at = now();
-                $completion->save();
+                // Используем upsert вместо firstOrCreate
+                CompletedGame::upsert(
+                    [
+                        [
+                            'user_id' => $user->id,
+                            'game_appid' => $appid,
+                            'is_completed' => true,
+                            'completed_at' => now(),
+                            'updated_at' => now(),
+                            'created_at' => now(),
+                        ]
+                    ],
+                    ['user_id', 'game_appid'],
+                    ['is_completed', 'completed_at', 'updated_at']
+                );
 
                 Cache::forget("user:{$user->id}:completed_games");
 
@@ -106,12 +119,6 @@ class GameCompletionController extends Controller
                     'message' => 'Game auto-completed'
                 ]);
             }
-
-//            return response()->json([
-//                'is_completed' => false,
-//                'auto_marked' => false,
-//                'reason' => 'Not all achievements are unlocked'
-//            ]);
             return response()->json(['completed' => false]);
 
         } catch (Throwable $e) {
