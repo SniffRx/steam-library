@@ -3,34 +3,29 @@ import { itemVariants } from '@/pages/Welcome/types';
 
 export const RightColumn = () => {
     return (
-        <motion.div
-            variants={itemVariants}
-            className="flex-1 relative"
-        >
-            <div className="relative bg-[#1B2838]/50 rounded-xl p-6 backdrop-blur-sm border border-[#66C0F4]/20">
-                <div className="absolute inset-0 bg-[#66C0F4]/10 rounded-xl -z-10"></div>
-
+        <motion.div variants={itemVariants} className="flex-1 relative">
+            <div className="relative bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 shadow-2xl">
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 rounded-full bg-[#FF5C5C]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#FFBE2E]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#2ACA44]"></div>
+                            <div className="w-3 h-3 rounded-full bg-red-400 shadow-lg shadow-red-400/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-400 shadow-lg shadow-yellow-400/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400 shadow-lg shadow-green-400/50"></div>
                         </div>
-                        <span className="text-xs text-[#C7D5E0]">SteamLibrary Dashboard</span>
+                        <span className="text-xs text-slate-400 font-medium">SteamLibrary Dashboard</span>
                     </div>
 
-                    <div className="bg-[#0E1621] rounded-lg p-4 border border-[#66C0F4]/10">
+                    <div className="bg-slate-900/50 backdrop-blur-md rounded-xl p-4 border border-white/5">
                         <div className="flex items-center space-x-3 mb-4">
                             <img
-                                style={{objectFit: "cover"}}
+                                style={{ objectFit: 'cover' }}
                                 src="https://cdn.cloudflare.steamstatic.com/steam/apps/292030/library_600x900.jpg"
                                 alt="Game"
-                                className="w-16 h-16 rounded"
+                                className="w-16 h-16 rounded-lg shadow-lg"
                             />
                             <div>
-                                <h3 className="font-medium">The Witcher 3: Wild Hunt</h3>
-                                <div className="flex items-center space-x-2 text-xs text-[#C7D5E0]">
+                                <h3 className="font-semibold text-slate-100">The Witcher 3: Wild Hunt</h3>
+                                <div className="flex items-center space-x-2 text-xs text-slate-400">
                                     <span>Completed: 100%</span>
                                     <span>•</span>
                                     <span>Achievements: 78/78</span>
@@ -40,22 +35,22 @@ export const RightColumn = () => {
 
                         <div className="space-y-3">
                             <div>
-                                <div className="flex justify-between text-xs mb-1">
+                                <div className="flex justify-between text-xs mb-1.5 text-slate-300">
                                     <span>Progress</span>
-                                    <span>100%</span>
+                                    <span className="font-medium">100%</span>
                                 </div>
-                                <div className="h-2 bg-[#1B2838] rounded-full overflow-hidden">
-                                    <div className="h-full bg-[#66C0F4] rounded-full" style={{ width: '100%' }}></div>
+                                <div className="h-2 bg-slate-800/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/5">
+                                    <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full shadow-lg shadow-cyan-500/50" style={{ width: '100%' }}></div>
                                 </div>
                             </div>
 
                             <div>
-                                <div className="flex justify-between text-xs mb-1">
+                                <div className="flex justify-between text-xs mb-1.5 text-slate-300">
                                     <span>Achievements</span>
-                                    <span>78/78</span>
+                                    <span className="font-medium">78/78</span>
                                 </div>
-                                <div className="h-2 bg-[#1B2838] rounded-full overflow-hidden">
-                                    <div className="h-full bg-green-500 rounded-full" style={{ width: '100%' }}></div>
+                                <div className="h-2 bg-slate-800/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/5">
+                                    <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg shadow-green-500/50" style={{ width: '100%' }}></div>
                                 </div>
                             </div>
                         </div>
@@ -68,17 +63,23 @@ export const RightColumn = () => {
                             { name: 'Stardew Valley', progress: 100, achievements: '40/40' },
                             { name: 'Hades', progress: 90, achievements: '45/49' }
                         ].map((game, i) => (
-                            <div key={i}
-                                 className="bg-[#0E1621]/80 rounded p-2 border border-[#66C0F4]/5 hover:border-[#66C0F4]/20 transition-colors duration-200">
-                                <h4 className="text-xs font-medium truncate">{game.name}</h4>
-                                <div className="mt-1">
-                                    <div className="h-1 bg-[#1B2838] rounded-full overflow-hidden">
+                            <div
+                                key={i}
+                                className="bg-slate-900/40 backdrop-blur-lg rounded-lg p-3 border border-white/5 hover:border-cyan-400/30 hover:bg-white/5 transition-all duration-300 cursor-pointer group"
+                            >
+                                <h4 className="text-xs font-medium truncate text-slate-200 group-hover:text-cyan-400 transition-colors">{game.name}</h4>
+                                <div className="mt-2">
+                                    <div className="h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
                                         <div
-                                            className={`h-full ${game.progress === 100 ? 'bg-green-500' : 'bg-[#66C0F4]'} rounded-full`}
+                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                game.progress === 100
+                                                    ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg shadow-green-500/50'
+                                                    : 'bg-gradient-to-r from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/50'
+                                            }`}
                                             style={{ width: `${game.progress}%` }}
                                         ></div>
                                     </div>
-                                    <p className="text-xs text-[#C7D5E0] mt-0.5">{game.achievements}</p>
+                                    <p className="text-xs text-slate-400 mt-1.5">{game.achievements}</p>
                                 </div>
                             </div>
                         ))}
@@ -86,5 +87,5 @@ export const RightColumn = () => {
                 </div>
             </div>
         </motion.div>
-    )
-}
+    );
+};

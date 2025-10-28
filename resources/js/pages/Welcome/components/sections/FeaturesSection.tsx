@@ -1,8 +1,71 @@
 import { motion } from 'framer-motion';
 
 export const FeaturesSection = () => {
+    const features = [
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            ),
+            title: 'Статистика прогресса',
+            description: 'Отслеживайте время в игре, процент завершения и достижения в реальном времени',
+            color: 'blue'
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+            ),
+            title: 'Умные фильтры',
+            description: 'Сортировка по статусу, времени игры и названию. Быстрый поиск по библиотеке',
+            color: 'cyan'
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+            title: 'Трекинг достижений',
+            description: 'Просматривайте прогресс по всем достижениям с подробной статистикой',
+            color: 'green'
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            ),
+            title: 'Профиль игрока',
+            description: 'Уровень, статус банов, местоположение и полная информация профиля',
+            color: 'purple'
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+            title: 'Недавно сыгранные',
+            description: 'Список последних игр с отметками времени и процентом прогресса',
+            color: 'yellow'
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+            title: 'Системные требования',
+            description: 'Просмотр минимальных и рекомендуемых требований для каждой игры',
+            color: 'red'
+        }
+    ];
+
     return (
-        <section id="features" className="max-w-7xl mx-auto mt-24 lg:mt-32 py-12">
+        <section id="features" className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -10,97 +73,32 @@ export const FeaturesSection = () => {
                 viewport={{ once: true }}
                 className="text-center mb-16"
             >
-                <h2 className="text-3xl font-bold mb-4 font-['Instrument Sans']">Powerful Features for Gamers</h2>
-                <p className="text-[#C7D5E0] max-w-2xl mx-auto">
-                    SteamLibrary offers everything you need to track and share your gaming progress
+                <h2 className="text-4xl font-bold mb-4 font-['Instrument_Sans']">
+                    Всё для управления библиотекой
+                </h2>
+                <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                    Мощные инструменты для отслеживания и анализа вашего игрового опыта
                 </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        ),
-                        title: "Achievement Tracking",
-                        description: "Track your progress through all achievements in your games and see which ones you're missing."
-                    },
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        ),
-                        title: "Friend Profiles",
-                        description: "View your friends' gaming progress and compare achievements."
-                    },
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
-                        ),
-                        title: "Game Reviews",
-                        description: "Share your thoughts on games and read reviews from other players."
-                    },
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        ),
-                        title: "Progress Statistics",
-                        description: "Detailed stats about your gaming habits and completion rates."
-                    },
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                            </svg>
-                        ),
-                        title: "Game Library",
-                        description: "Organize your entire Steam library with custom categories and tags."
-                    },
-                    {
-                        icon: (
-                            <svg className="w-8 h-8 text-[#66C0F4]" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                            </svg>
-                        ),
-                        title: "Badges & Rewards",
-                        description: "Earn badges for completing games and reaching milestones."
-                    }
-                ].map((feature, i) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {features.map((feature, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: i * 0.1 }}
                         viewport={{ once: true }}
-                        className="bg-[#1B2838]/50 rounded-xl p-6 border border-[#66C0F4]/10 hover:border-[#66C0F4]/30 transition-colors duration-200"
+                        className="bg-[#1a1f29]/60 backdrop-blur-xl rounded-2xl p-6 border border-white/5 hover:border-blue-400/30 transition-all duration-300 group"
                     >
-                        <div className="mb-4">
+                        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-${feature.color}-500/10 text-${feature.color}-400 mb-4 group-hover:scale-110 transition-transform duration-300`}>
                             {feature.icon}
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                        <p className="text-[#C7D5E0]">{feature.description}</p>
+                        <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
                     </motion.div>
                 ))}
             </div>
         </section>
-    )
-}
+    );
+};

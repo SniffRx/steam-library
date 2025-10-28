@@ -8,20 +8,19 @@ export const LeftColumn = () => {
 
     return (
         <motion.div variants={itemVariants} className="flex-1 space-y-8">
-            <h1 className="font-['Instrument Sans'] text-4xl leading-tight font-bold lg:text-5xl">
-                Track Your <span className="text-[#66C0F4]">Gaming Journey</span> Like Never Before
+            <h1 className="font-['Instrument Sans'] text-5xl leading-tight font-bold lg:text-6xl bg-gradient-to-r from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent">
+                Track Your Gaming Journey Like Never Before
             </h1>
 
-            <p className="max-w-2xl text-lg text-[#C7D5E0]">
-                SteamLibrary helps you organize your game collection, track achievements, and share your progress with friends. Never lose track of
-                your gaming accomplishments again.
+            <p className="max-w-2xl text-lg text-slate-300 leading-relaxed">
+                SteamLibrary helps you organize your game collection, track achievements, and share your progress with friends. Never lose track of your gaming accomplishments again.
             </p>
 
             <div className="flex flex-wrap gap-4">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link
                         href={auth.user ? route('dashboard') : route('login')}
-                        className="inline-block rounded-md bg-[#66C0F4] px-8 py-3 text-base font-medium text-[#1B2838] transition-colors duration-200 hover:bg-[#4FABDD]"
+                        className="inline-block rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-3.5 text-base font-semibold text-slate-900 transition-all duration-300 hover:from-cyan-300 hover:to-blue-400 shadow-xl shadow-cyan-500/25"
                     >
                         Get Started
                     </Link>
@@ -29,7 +28,7 @@ export const LeftColumn = () => {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link
                         href="#features"
-                        className="inline-block rounded-md border border-[#66C0F4] px-8 py-3 text-base font-medium text-[#66C0F4] transition-colors duration-200 hover:bg-[#66C0F4]/10"
+                        className="inline-block rounded-xl border border-white/20 bg-white/5 backdrop-blur-md px-8 py-3.5 text-base font-medium text-slate-100 transition-all duration-300 hover:bg-white/10"
                     >
                         Learn More
                     </Link>
@@ -43,12 +42,12 @@ export const LeftColumn = () => {
                             key={i}
                             src={`https://randomuser.me/api/portraits/${i % 2 === 0 ? 'women' : 'men'}/${i + 20}.jpg`}
                             alt="User"
-                            className="h-10 w-10 rounded-full border-2 border-[#1B2838]"
+                            className="h-10 w-10 rounded-full border-2 border-slate-900 ring-2 ring-white/10"
                         />
                     ))}
                 </div>
-                <p className="text-sm text-[#C7D5E0]">
-                    Join <span className="font-semibold text-[#66C0F4]">10,000+</span> gamers already tracking their progress
+                <p className="text-sm text-slate-300">
+                    Join <span className="font-semibold text-cyan-400">10,000+</span> gamers already tracking their progress
                 </p>
             </div>
         </motion.div>
