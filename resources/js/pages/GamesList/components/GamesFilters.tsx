@@ -1,4 +1,5 @@
 import React from 'react';
+import { Search, Filter, SortAsc } from 'lucide-react';
 
 interface GamesFiltersProps {
     onFilterChange: (filters: Partial<{ search: string; status: string; sort: string }>) => void;
@@ -8,26 +9,6 @@ interface GamesFiltersProps {
         sort: string;
     };
 }
-
-const CheckboxOption = ({
-                            label,
-                            checked,
-                            onChange,
-                        }: {
-    label: string;
-    checked?: boolean;
-    onChange?: React.ChangeEventHandler<HTMLInputElement>;
-}) => (
-    <label className="flex items-center space-x-3">
-        <input
-            type="checkbox"
-            className="form-checkbox h-5 w-5 text-blue-600 rounded"
-            checked={checked}
-            onChange={onChange}
-        />
-        <span className="text-gray-300">{label}</span>
-    </label>
-);
 
 export const GamesFilters = ({ onFilterChange, currentFilters }: GamesFiltersProps) => {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,35 +24,34 @@ export const GamesFilters = ({ onFilterChange, currentFilters }: GamesFiltersPro
     };
 
     return (
-        <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-700">
-            <h2 className="text-xl font-semibold text-white mb-4">Filters</h2>
-            <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-400 mb-2">Search</label>
+        <div className="sticky top-6 bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+                <Filter className="w-5 h-5 text-blue-400" />
+                <h2 className="text-xl font-bold text-white">Фильтры</h2>
+            </div>
+
+            {/* Search */}
+            <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Поиск</label>
                 <div className="relative">
                     <input
                         type="text"
-                        placeholder="Game name..."
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 pl-4 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onChange={handleSearch}
+                        placeholder="Название игры..."
                         value={currentFilters.search}
+                        onChange={handleSearch}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                     />
-                    <svg
-                        className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
                 </div>
             </div>
 
-            <div className="space-y-6">
-                <h3 className="text-md font-medium text-gray-300 mb-3">Sort By</h3>
+            {/* Sort */}
+            <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
+                    <SortAsc className="w-4 h-4" />
+                    Сортировка
+                </label>
                 <select
-                    className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 px-3 text-white"
-                    onChange={handleSort}
                     value={
                         currentFilters.sort === 'name'
                             ? 'Alphabetical'
@@ -79,30 +59,47 @@ export const GamesFilters = ({ onFilterChange, currentFilters }: GamesFiltersPro
                                 ? 'Play Time'
                                 : 'Recently Played'
                     }
+                    onChange={handleSort}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                 >
                     <option>Recently Played</option>
                     <option>Alphabetical</option>
                     <option>Play Time</option>
                 </select>
+            </div>
 
-                <h3 className="text-md font-medium text-gray-300 mb-3">Status</h3>
+            {/* Status */}
+            <div>
+                <label className="block text-sm font-medium text-slate-400 mb-3">Статус</label>
                 <div className="space-y-2">
-                    <CheckboxOption
-                        label="Completed"
-                        checked={currentFilters.status === 'completed'}
-                        onChange={() => onFilterChange({ status: 'completed' })}
-                    />
-                    <CheckboxOption
-                        label="In Progress"
-                        checked={currentFilters.status === 'in-progress'}
-                        onChange={() => onFilterChange({ status: 'in-progress' })}
-                    />
-                    <CheckboxOption
-                        label="All"
-                        checked={currentFilters.status === 'all'}
-                        onChange={() => onFilterChange({ status: 'all' })}
-                    />
+                    {[
+                        { key: 'all', label: 'Все игры' },
+                        { key: 'completed', label: 'Завершённые' },
+                        { key: 'in-progress', label: 'В процессе' }
+                    ].map(({ key, label }) => (
+                        <label
+                            key={key}
+                            className="flex items-center gap-3 cursor-pointer group"
+                        >
+                            <input
+                                type="radio"
+                                checked={currentFilters.status === key}
+                                onChange={() => onFilterChange({ status: key })}
+                                className="w-4 h-4 text-blue-500 bg-slate-900/50 border-white/10 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                            />
+                            <span className="text-slate-300 group-hover:text-white transition-colors">
+                                {label}
+                            </span>
+                        </label>
+                    ))}
                 </div>
+            </div>
+
+            {/* Divider with tip */}
+            <div className="pt-4 border-t border-white/5">
+                <p className="text-xs text-slate-500 text-center">
+                    💡 Используйте фильтры для быстрого поиска
+                </p>
             </div>
         </div>
     );

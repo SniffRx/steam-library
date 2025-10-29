@@ -2,12 +2,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import GameCard from './components/GameCard';
-import MiniGameCard from './components/MiniGameCard';
 import GameDetailsView from './components/gameDetailsView/GameDetailsView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, RefreshCw, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
+import { Search, RefreshCw, TrendingUp, CheckCircle2, Clock, Filter } from 'lucide-react';
 
-// ✨ НОВЫЕ ИМПОРТЫ
+// Hooks
 import { useSyncProgress } from '@/hooks/useSyncProgress';
 import { useGameDetails } from '@/hooks/useGameDetails';
 
@@ -19,40 +18,12 @@ interface Game {
     playtime_2weeks?: number;
 }
 
-interface Friend {
-    steamid: string;
-    personaname: string;
-    avatar: string;
-    gameextrainfo?: string;
-}
-
-interface Achievement {
-    apiname: string;
-    achieved: boolean;
-    unlocktime: number;
-    name?: string;
-    description?: string;
-    icon?: string;
-}
-
-interface SyncProgress {
-    status: 'idle' | 'queued' | 'processing' | 'completed' | 'error';
-    progress?: number;
-    processed?: number;
-    total?: number;
-    completed?: number;
-    errors?: number;
-    message?: string;
-    finished_at?: string;
-}
-
 interface Props {
     games: Game[];
-    friends: Friend[];
+    friends: any[];
     completedGames: number[];
     error?: string;
     initialSync?: boolean;
-    syncInProgress?: boolean;
     message?: string;
 }
 
@@ -66,22 +37,19 @@ export default function GamesList() {
     const [filters, setFilters] = useState({ search: '', status: 'all', sort: 'recent' });
     const [searchInput, setSearchInput] = useState(filters.search);
     const [syncing, setSyncing] = useState(false);
-    const [visibleCount, setVisibleCount] = useState(() => Math.min(9, initialGames.length));
+    const [visibleCount, setVisibleCount] = useState(() => Math.min(12, initialGames.length));
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    // ✨ React Query для синхронизации
+    // React Query hooks
     const { data: syncProgress } = useSyncProgress(syncing);
-
-    // ✨ React Query для деталей игры
     const { data: gameDetails, isLoading: isLoadingDetails } = useGameDetails(selectedGameId);
 
-    // ✨ Отслеживаем завершение синхронизации
+    // Отслеживаем завершение синхронизации
     useEffect(() => {
         if (!syncProgress) return;
 
         if (syncProgress.status === 'completed' || syncProgress.status === 'error' || syncProgress.status === 'idle') {
             setSyncing(false);
-
             if (syncProgress.status === 'completed') {
                 setTimeout(() => window.location.reload(), 2000);
             }
@@ -107,7 +75,7 @@ export default function GamesList() {
                 if (!isLoadingMore && visibleCount < filteredGames.length) {
                     setIsLoadingMore(true);
                     setTimeout(() => {
-                        setVisibleCount(prev => Math.min(prev + 9, filteredGames.length));
+                        setVisibleCount(prev => Math.min(prev + 12, filteredGames.length));
                         setIsLoadingMore(false);
                     }, 300);
                 }
@@ -118,46 +86,36 @@ export default function GamesList() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isLoadingMore, visibleCount]);
 
-// ✨ Оптимизированная фильтрация с Set
+    // Фильтрация игр
     const filteredGames = useMemo(() => {
         if (!initialGames.length) return [];
 
         const completedSet = new Set(localCompleted);
         let result = initialGames;
 
-        // Фильтрация по поиску
         if (searchInput) {
             const lowerSearch = searchInput.toLowerCase();
-            result = result.filter(game =>
-                game.name.toLowerCase().includes(lowerSearch)
-            );
+            result = result.filter(game => game.name.toLowerCase().includes(lowerSearch));
         }
 
-        // Фильтрация по статусу
         if (filters.status === 'completed') {
             result = result.filter(game => completedSet.has(game.appid));
         } else if (filters.status === 'in-progress') {
             result = result.filter(game => !completedSet.has(game.appid));
         }
 
-        // Сортировка
         return [...result].sort((a, b) => {
-            if (filters.sort === 'playtime') {
-                return b.playtime_forever - a.playtime_forever;
-            }
-            if (filters.sort === 'name') {
-                return a.name.localeCompare(b.name);
-            }
+            if (filters.sort === 'playtime') return b.playtime_forever - a.playtime_forever;
+            if (filters.sort === 'name') return a.name.localeCompare(b.name);
             return (b.playtime_2weeks || 0) - (a.playtime_2weeks || 0);
         });
     }, [initialGames, searchInput, filters.status, filters.sort, localCompleted]);
 
     // Сброс при изменении фильтров
     useEffect(() => {
-        setVisibleCount(Math.min(9, filteredGames.length));
+        setVisibleCount(Math.min(12, filteredGames.length));
     }, [filters, searchInput, filteredGames.length]);
 
-    // Видимые игры для infinite scroll
     const visibleGames = useMemo(() => {
         return filteredGames.slice(0, visibleCount);
     }, [filteredGames, visibleCount]);
@@ -192,12 +150,10 @@ export default function GamesList() {
         }
     };
 
-    // Изменение фильтров
     const handleFilterChange = useCallback((newFilters: Partial<typeof filters>) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     }, []);
 
-    // Переключение завершённости игры
     const handleCompletionToggle = useCallback(async (gameId: number) => {
         try {
             const response = await fetch(`/gameslist/${gameId}/toggle-completion`, {
@@ -219,68 +175,62 @@ export default function GamesList() {
         } catch (err) {
             console.error('Error toggling completion:', err);
         }
-    }, [localCompleted]);
+    }, []);
 
-    // ✨ Выбор игры (использует React Query)
     const handleGameSelect = useCallback((game: Game) => {
         setSelectedGame(game);
         setSelectedGameId(game.appid);
     }, []);
 
-    // Закрытие деталей
     const handleCloseDetails = useCallback(() => {
         setSelectedGame(null);
         setSelectedGameId(null);
     }, []);
 
-    // Если первая синхронизация - показываем загрузчик
+    // Первая синхронизация
     if (initialSync) {
         return (
             <AppLayout>
-                <Head title="Games List" />
+                <Head title="Загрузка игр - Steam Library" />
 
-                <div className="fixed inset-0 -z-10 bg-gradient-to-br from-gray-950 via-black to-gray-900" />
-                <div className="fixed inset-0 -z-10 overflow-hidden">
-                    <motion.div
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-                        transition={{ duration: 8, repeat: Infinity }}
-                        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"
-                    />
-                </div>
+                <div className="min-h-screen bg-[#0e1217] relative overflow-hidden">
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                    </div>
 
-                <div className="relative px-4 md:px-6 lg:px-8 py-8">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="group relative mx-auto max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-12 text-center backdrop-blur-xl"
-                    >
-                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
+                    <div className="relative z-10 flex items-center justify-center min-h-screen px-6">
                         <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                            className="mx-auto mb-6 h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent"
-                        />
-
-                        <h2 className="relative mb-4 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-2xl font-bold text-transparent">
-                            Первая загрузка библиотеки
-                        </h2>
-                        <p className="relative mb-6 text-gray-400">
-                            {message || 'Загружаем вашу библиотеку игр из Steam...'}
-                        </p>
-                        <p className="relative text-sm text-gray-500">
-                            Это может занять несколько минут. Страница обновится автоматически.
-                        </p>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => window.location.reload()}
-                            className="relative mt-6 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/40"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="max-w-2xl w-full bg-[#1a1f29]/80 backdrop-blur-xl rounded-3xl p-12 border border-white/5 text-center"
                         >
-                            Проверить статус
-                        </motion.button>
-                    </motion.div>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                className="mx-auto mb-6 h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent"
+                            />
+
+                            <h2 className="text-3xl font-bold mb-4 font-['Instrument_Sans'] bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                                Первая загрузка библиотеки
+                            </h2>
+                            <p className="text-lg text-slate-400 mb-6">
+                                {message || 'Загружаем вашу библиотеку игр из Steam...'}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                                Это может занять несколько минут. Страница обновится автоматически.
+                            </p>
+
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => window.location.reload()}
+                                className="mt-8 px-8 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                            >
+                                Проверить статус
+                            </motion.button>
+                        </motion.div>
+                    </div>
                 </div>
             </AppLayout>
         );
@@ -288,321 +238,296 @@ export default function GamesList() {
 
     return (
         <AppLayout>
-            <Head title="Games List" />
+            <Head title="Библиотека игр - Steam Library" />
 
-            {/* Background */}
-            <div className="fixed inset-0 -z-10 bg-gradient-to-br from-gray-950 via-black to-gray-900" />
-            <div className="fixed inset-0 -z-10 overflow-hidden">
-                <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-white/5 blur-3xl"
-                />
-                <motion.div
-                    animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-white/3 blur-3xl"
-                />
-            </div>
+            <div className="min-h-screen bg-[#0e1217] relative overflow-hidden">
+                {/* Background */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-purple-500/3 rounded-full blur-3xl"></div>
+                </div>
 
-            <div className="relative space-y-6 px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8">
-                {/* Основной layout */}
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-                    {/* Левая колонка - Фильтры */}
+                <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-6">
+                    {/* Header */}
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="lg:col-span-1"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-2xl"
                     >
-                        <div className="sticky top-4 space-y-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-xl">
-                            <h2 className="text-xl font-bold text-white">Фильтры</h2>
-
-                            {/* Поиск */}
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-300">Поиск</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Название игры..."
-                                        value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-2 pr-10 text-white placeholder-gray-400 transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50"
-                                    />
-                                    <Search className="absolute top-2.5 right-3 h-5 w-5 text-gray-400" />
+                                <h1 className="text-3xl font-bold font-['Instrument_Sans'] bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent mb-2">
+                                    Моя библиотека игр
+                                </h1>
+                                <div className="flex items-center gap-4 text-sm text-slate-400">
+                                    <span>Всего: {initialGames.length}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                        {localCompleted.length} завершено
+                                    </span>
+                                    <span>•</span>
+                                    <span>Друзей онлайн: {friends.length}</span>
                                 </div>
                             </div>
 
-                            {/* Сортировка */}
-                            <div>
-                                <h3 className="mb-3 text-sm font-semibold text-gray-300">Сортировка</h3>
-                                <select
-                                    value={filters.sort === 'name' ? 'Alphabetical' : filters.sort === 'playtime' ? 'Play Time' : 'Recent'}
-                                    onChange={(e) =>
-                                        handleFilterChange({
-                                            sort: e.target.value === 'Alphabetical' ? 'name' : e.target.value === 'Play Time' ? 'playtime' : 'recent',
-                                        })
-                                    }
-                                    className="w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-white transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50"
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleSyncAll}
+                                disabled={syncing}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all ${
+                                    syncing
+                                        ? 'bg-slate-600 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:shadow-blue-500/30'
+                                } text-white`}
+                            >
+                                {syncing ? (
+                                    <>
+                                        <RefreshCw className="w-5 h-5 animate-spin" />
+                                        <span>Синхронизация...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TrendingUp className="w-5 h-5" />
+                                        <span>Обновить данные</span>
+                                    </>
+                                )}
+                            </motion.button>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <AnimatePresence>
+                            {syncing && syncProgress?.status !== 'idle' && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    className="bg-slate-900/40 border border-white/5 rounded-xl p-4"
                                 >
-                                    <option>Recent</option>
-                                    <option>Alphabetical</option>
-                                    <option>Play Time</option>
-                                </select>
-                            </div>
+                                    <div className="flex justify-between text-sm text-slate-300 mb-2">
+                                        <span>
+                                            {syncProgress?.status === 'queued' && 'В очереди...'}
+                                            {syncProgress?.status === 'processing' && `Обработка (${syncProgress?.processed}/${syncProgress?.total})`}
+                                            {syncProgress?.status === 'completed' && 'Завершено!'}
+                                            {syncProgress?.status === 'error' && 'Ошибка'}
+                                        </span>
+                                        <span className="font-bold">{syncProgress?.progress ?? 0}%</span>
+                                    </div>
 
-                            {/* Статус */}
-                            <div>
-                                <h3 className="mb-3 text-sm font-semibold text-gray-300">Статус</h3>
-                                <div className="space-y-3">
-                                    {[
-                                        { key: 'all', label: 'Все' },
-                                        { key: 'completed', label: 'Пройдено' },
-                                        { key: 'in-progress', label: 'В процессе' },
-                                    ].map(({ key, label }) => (
-                                        <label key={key} className="group flex cursor-pointer items-center space-x-3">
-                                            <input
-                                                type="radio"
-                                                checked={filters.status === key}
-                                                onChange={() => handleFilterChange({ status: key })}
-                                                className="h-5 w-5 border-gray-400 bg-transparent text-blue-500 focus:ring-2 focus:ring-blue-400"
-                                            />
-                                            <span className="text-gray-200 transition-colors group-hover:text-white">{label}</span>
-                                        </label>
-                                    ))}
+                                    <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${syncProgress?.progress ?? 0}%` }}
+                                            transition={{ duration: 0.3 }}
+                                        />
+                                    </div>
+
+                                    {syncProgress?.status === 'completed' && (
+                                        <p className="mt-2 text-sm text-green-400">
+                                            ✓ Найдено {syncProgress?.completed} из {syncProgress?.total}
+                                        </p>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+
+                    {/* Filters & Content */}
+                    <div className="grid lg:grid-cols-4 gap-6">
+                        {/* Sidebar Filters */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="lg:col-span-1"
+                        >
+                            <div className="sticky top-6 bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Filter className="w-5 h-5 text-blue-400" />
+                                    <h2 className="text-xl font-bold text-white">Фильтры</h2>
                                 </div>
-                            </div>
 
-                            {/* Quick Stats */}
-                            <div className="border-t border-white/10 pt-4">
-                                <h3 className="mb-3 font-semibold text-white">Статистика</h3>
-                                <div className="space-y-3 text-sm">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-400">Завершено:</span>
-                                        <span className="font-semibold text-emerald-400">{localCompleted.length}</span>
+                                {/* Search */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Поиск</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Название игры..."
+                                            value={searchInput}
+                                            onChange={(e) => setSearchInput(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                                        />
+                                        <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-400">В процессе:</span>
-                                        <span className="font-semibold text-blue-400">{initialGames.length - localCompleted.length}</span>
+                                </div>
+
+                                {/* Sort */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Сортировка</label>
+                                    <select
+                                        value={filters.sort}
+                                        onChange={(e) => handleFilterChange({ sort: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    >
+                                        <option value="recent">Недавно играли</option>
+                                        <option value="name">По алфавиту</option>
+                                        <option value="playtime">По времени игры</option>
+                                    </select>
+                                </div>
+
+                                {/* Status */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-3">Статус</label>
+                                    <div className="space-y-2">
+                                        {[
+                                            { key: 'all', label: 'Все игры' },
+                                            { key: 'completed', label: 'Завершённые' },
+                                            { key: 'in-progress', label: 'В процессе' }
+                                        ].map(({ key, label }) => (
+                                            <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                                                <input
+                                                    type="radio"
+                                                    checked={filters.status === key}
+                                                    onChange={() => handleFilterChange({ status: key })}
+                                                    className="w-4 h-4 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                                                />
+                                                <span className="text-slate-300 group-hover:text-white transition-colors">{label}</span>
+                                            </label>
+                                        ))}
                                     </div>
-                                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                                </div>
+
+                                {/* Stats */}
+                                <div className="pt-6 border-t border-white/5">
+                                    <h3 className="text-sm font-semibold text-white mb-3">Статистика</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Завершено:</span>
+                                            <span className="font-semibold text-green-400">{localCompleted.length}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">В процессе:</span>
+                                            <span className="font-semibold text-blue-400">{initialGames.length - localCompleted.length}</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 h-2 bg-slate-900/50 rounded-full overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${(localCompleted.length / initialGames.length) * 100}%` }}
                                             transition={{ duration: 1 }}
-                                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-600"
+                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
                                         />
                                     </div>
-                                    <p className="text-center text-xs text-gray-500">
+                                    <p className="text-center text-xs text-slate-500 mt-2">
                                         {Math.round((localCompleted.length / initialGames.length) * 100)}% завершено
                                     </p>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
 
-                    {/* Правая колонка - Контент */}
-                    <div className="space-y-6 lg:col-span-4">
-                        {/* Заголовок + кнопка синхронизации */}
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-xl"
-                        >
-                            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
-                            <div className="relative flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-                                <div>
-                                    <h1 className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-2xl font-bold text-transparent">
-                                        Моя библиотека игр
-                                    </h1>
-                                    <p className="mt-1 text-sm text-gray-400">
-                                        Всего: {initialGames.length} | Друзья онлайн: {friends.length}
-                                    </p>
-                                </div>
-
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={handleSyncAll}
-                                    disabled={syncing}
-                                    className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-medium text-white shadow-lg transition-all ${
-                                        syncing
-                                            ? 'cursor-not-allowed bg-gray-600'
-                                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:shadow-blue-500/30'
-                                    }`}
-                                >
-                                    {syncing ? (
-                                        <>
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                            <span>Синхронизация...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <TrendingUp className="h-4 w-4" />
-                                            <span>Проверить все игры</span>
-                                        </>
-                                    )}
-                                </motion.button>
-                            </div>
-
-                            {/* Прогресс-бар */}
-                            <AnimatePresence>
-                                {syncing && syncProgress?.status !== 'idle' && (
+                        {/* Games Grid */}
+                        <div className="lg:col-span-3">
+                            <AnimatePresence mode="wait">
+                                {!selectedGame ? (
                                     <motion.div
-                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                        animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                        className="overflow-hidden"
+                                        key="games-grid"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-2xl"
                                     >
-                                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                                            <div className="mb-2 flex justify-between text-sm text-gray-300">
-                                                <span>
-                                                    {syncProgress?.status === 'queued' && 'В очереди...'}
-                                                    {syncProgress?.status === 'processing' &&
-                                                        `Обработка (${syncProgress?.processed}/${syncProgress?.total})`}
-                                                    {syncProgress?.status === 'completed' && 'Завершено!'}
-                                                    {syncProgress?.status === 'error' && 'Ошибка'}
-                                                </span>
-                                                <span className="font-semibold">{syncProgress?.progress ?? 0}%</span>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">
+                                                    Игры ({visibleCount} / {filteredGames.length})
+                                                </h2>
+                                                {visibleCount < filteredGames.length && (
+                                                    <p className="text-xs text-slate-500 mt-1">Прокрутите вниз для загрузки ещё</p>
+                                                )}
                                             </div>
-
-                                            <div className="h-3 w-full overflow-hidden rounded-full bg-white/10">
-                                                <motion.div
-                                                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-600"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${syncProgress?.progress ?? 0}%` }}
-                                                    transition={{ duration: 0.3 }}
-                                                />
-                                            </div>
-
-                                            {syncProgress?.status === 'processing' && (
-                                                <div className="mt-2 flex justify-between text-xs text-gray-400">
-                                                    <span>Завершено: {syncProgress?.completed ?? 0}</span>
-                                                    {syncProgress?.errors ? (
-                                                        <span className="text-yellow-400">Ошибок: {syncProgress?.errors}</span>
-                                                    ) : null}
+                                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                                <div className="flex items-center gap-1">
+                                                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                                    <span>{localCompleted.length}</span>
                                                 </div>
-                                            )}
-
-                                            {syncProgress?.status === 'completed' && (
-                                                <p className="mt-2 text-sm text-emerald-400">
-                                                    ✓ Найдено {syncProgress?.completed} из {syncProgress?.total}
-                                                </p>
-                                            )}
-
-                                            {syncProgress?.status === 'error' && (
-                                                <p className="mt-2 text-sm text-red-400">✗ {syncProgress?.message || 'Произошла ошибка'}</p>
-                                            )}
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="w-4 h-4 text-slate-400" />
+                                                    <span>{initialGames.length - localCompleted.length}</span>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {error ? (
+                                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
+                                        ) : initialGames.length === 0 ? (
+                                            <div className="py-12 text-center text-slate-400">Игры не найдены</div>
+                                        ) : (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                                    {visibleGames.map(game => (
+                                                        <GameCard
+                                                            key={game.appid}
+                                                            game={game}
+                                                            isCompleted={localCompleted.includes(game.appid)}
+                                                            onCompletionToggle={() => handleCompletionToggle(game.appid)}
+                                                            onGameSelect={() => handleGameSelect(game)}
+                                                        />
+                                                    ))}
+                                                </div>
+
+                                                {isLoadingMore && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        className="flex justify-center items-center py-8"
+                                                    >
+                                                        <motion.div
+                                                            animate={{ rotate: 360 }}
+                                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                            className="h-8 w-8 rounded-full border-4 border-blue-500 border-t-transparent"
+                                                        />
+                                                        <span className="ml-3 text-slate-400">Загрузка игр...</span>
+                                                    </motion.div>
+                                                )}
+
+                                                {visibleCount >= filteredGames.length && filteredGames.length > 12 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        className="text-center py-6 text-slate-500 text-sm"
+                                                    >
+                                                        Показаны все игры ({filteredGames.length})
+                                                    </motion.div>
+                                                )}
+                                            </>
+                                        )}
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="game-details"
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <GameDetailsView
+                                            game={selectedGame}
+                                            loading={isLoadingDetails}
+                                            details={gameDetails || {
+                                                achievements: [],
+                                                friendsPlaying: [],
+                                                game_info: {},
+                                            }}
+                                            onClose={handleCloseDetails}
+                                        />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                        </motion.div>
-
-                        {/* Список игр / Детали игры */}
-                        <AnimatePresence mode="wait">
-                            {!selectedGame ? (
-                                <motion.div
-                                    key="games-list"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-xl"
-                                >
-                                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
-                                    {/* Заголовок */}
-                                    <div className="relative mb-6 flex items-center justify-between">
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-white">
-                                                Игры ({visibleCount} / {filteredGames.length})
-                                            </h2>
-                                            {visibleCount < filteredGames.length && (
-                                                <p className="mt-1 text-xs text-gray-500">Прокрутите вниз для загрузки ещё</p>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                                            <div className="flex items-center gap-1">
-                                                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                                <span>{localCompleted.length} завершено</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="h-4 w-4 text-gray-400" />
-                                                <span>{initialGames.length - localCompleted.length} в процессе</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Грид игр */}
-                                    {error ? (
-                                        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">{error}</div>
-                                    ) : initialGames.length === 0 ? (
-                                        <div className="py-12 text-center text-gray-400">Игры не найдены</div>
-                                    ) : (
-                                        <>
-                                            <div className="relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                                                {visibleGames.map(game => (
-                                                    <GameCard
-                                                        key={game.appid}
-                                                        game={game}
-                                                        isCompleted={localCompleted.includes(game.appid)}
-                                                        onCompletionToggle={() => handleCompletionToggle(game.appid)}
-                                                        onGameSelect={() => handleGameSelect(game)}
-                                                    />
-                                                ))}
-                                            </div>
-
-                                            {/* Loading indicator */}
-                                            {isLoadingMore && (
-                                                <motion.div
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className="flex justify-center items-center py-8"
-                                                >
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                        className="h-8 w-8 rounded-full border-4 border-blue-500 border-t-transparent"
-                                                    />
-                                                    <span className="ml-3 text-gray-400">Загрузка игр...</span>
-                                                </motion.div>
-                                            )}
-
-                                            {/* End indicator */}
-                                            {visibleCount >= filteredGames.length && filteredGames.length > 9 && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="text-center py-6 text-gray-500 text-sm"
-                                                >
-                                                    Показаны все игры ({filteredGames.length})
-                                                </motion.div>
-                                            )}
-                                        </>
-                                    )}
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="game-details"
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <GameDetailsView
-                                        game={selectedGame}
-                                        loading={isLoadingDetails}
-                                        details={gameDetails || {
-                                            achievements: [],
-                                            friendsPlaying: [],
-                                            game_info: {},
-                                        }}
-                                        onClose={handleCloseDetails}
-                                    />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        </div>
                     </div>
                 </div>
             </div>

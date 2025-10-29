@@ -4,68 +4,65 @@ import { Gamepad2, Users, Clock, Heart } from 'lucide-react';
 export const UserStatistic = ({ userGamesCount, userFriends, userRecentlyGames }) => {
     const stats = [
         {
-            title: 'Количество игр',
-            value: userGamesCount,
             icon: Gamepad2,
-            gradient: 'from-blue-500/20 to-cyan-600/20',
-            iconColor: 'text-blue-400',
-            glow: 'shadow-blue-500/20'
+            value: userGamesCount,
+            label: 'Игр в библиотеке',
+            color: 'text-blue-400',
+            bg: 'from-blue-500/10 to-blue-500/5',
+            border: 'border-blue-500/30',
+            iconBg: 'bg-blue-500/20'
         },
         {
-            title: 'Количество друзей',
-            value: userFriends.total_friends,
             icon: Users,
-            gradient: 'from-purple-500/20 to-violet-600/20',
-            iconColor: 'text-purple-400',
-            glow: 'shadow-purple-500/20'
+            value: userFriends.total_friends,
+            label: 'Друзей в Steam',
+            color: 'text-purple-400',
+            bg: 'from-purple-500/10 to-purple-500/5',
+            border: 'border-purple-500/30',
+            iconBg: 'bg-purple-500/20'
         },
         {
-            title: 'В списке желаемого',
-            value: 'В разработке',
-            icon: Heart,
-            gradient: 'from-pink-500/20 to-rose-600/20',
-            iconColor: 'text-pink-400',
-            glow: 'shadow-pink-500/20'
-        },
-        {
-            title: 'Часов за 2 недели',
-            value: ((userRecentlyGames?.games ?? []).reduce((sum, game) => sum + (game.playtime_2weeks ?? 0), 0) / 60).toFixed(1),
             icon: Clock,
-            gradient: 'from-amber-500/20 to-yellow-600/20',
-            iconColor: 'text-amber-400',
-            glow: 'shadow-amber-500/20'
+            value: ((userRecentlyGames?.games ?? []).reduce((sum, game) => sum + (game.playtime_2weeks ?? 0), 0) / 60).toFixed(1),
+            label: 'Часов за 2 недели',
+            color: 'text-yellow-400',
+            bg: 'from-yellow-500/10 to-yellow-500/5',
+            border: 'border-yellow-500/30',
+            iconBg: 'bg-yellow-500/20'
+        },
+        {
+            icon: Heart,
+            value: userFriends.online_friends_count,
+            label: 'Друзей онлайн',
+            color: 'text-pink-400',
+            bg: 'from-pink-500/10 to-pink-500/5',
+            border: 'border-pink-500/30',
+            iconBg: 'bg-pink-500/20'
         },
     ];
 
     return (
         <>
-            {stats.map((stat, index) => (
+            {stats.map((stat, i) => (
                 <motion.div
-                    key={index}
+                    key={i}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 + index * 0.05 }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    className="group/stat relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] p-4 backdrop-blur-md transition-all hover:border-white/20 hover:shadow-lg hover:shadow-white/5"
+                    transition={{ delay: 0.15 + i * 0.05 }}
+                    whileHover={{ scale: 1.03, y: -4 }}
+                    className={`bg-gradient-to-br ${stat.bg} backdrop-blur-sm rounded-2xl p-6 border ${stat.border} shadow-lg hover:shadow-xl transition-all`}
                 >
-                    {/* Hover glow */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 transition-opacity group-hover/stat:opacity-100`} />
-
-                    <div className="relative flex items-center gap-3">
-                        {/* Icon */}
-                        <div className={`flex-shrink-0 rounded-xl bg-gradient-to-br ${stat.gradient} p-2.5 shadow-lg ${stat.glow}`}>
-                            <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
-                        </div>
-
-                        {/* Value */}
-                        <div className="flex-1 min-w-0">
-                            <p className="text-2xl font-bold text-white truncate">{stat.value}</p>
-                            <p className="mt-0.5 text-xs text-gray-400 truncate">{stat.title}</p>
+                    <div className="flex items-start justify-between mb-4">
+                        <div className={`${stat.iconBg} p-3 rounded-xl`}>
+                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
                         </div>
                     </div>
+                    <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
+                    <p className="text-sm text-slate-400">{stat.label}</p>
                 </motion.div>
             ))}
         </>
     );
 };
+
 export default UserStatistic;

@@ -1,16 +1,17 @@
 import React from 'react';
+import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export const CloseButton = ({onClose}: {onClose:void}) => {
+export const CloseButton = ({ onClose }: { onClose: () => void }) => {
     return (
-        <button
+        <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition z-10"
+            className="absolute top-6 right-6 w-10 h-10 bg-slate-900/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-red-500/80 hover:border-red-500/50 transition-all duration-300 z-50 shadow-lg"
             aria-label="Закрыть"
         >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-    )
-}
+            <X className="w-5 h-5 text-white" />
+        </motion.button>
+    );
+};

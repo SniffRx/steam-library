@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
@@ -29,145 +29,196 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     return (
         <>
-            <Head title="Log in" />
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <form
-                    onSubmit={submit}
-                    className="w-full max-w-md p-8 bg-gradient-to-tr from-gray-900/70 via-gray-800/60 to-gray-900/70 rounded-2xl backdrop-blur-md border border-gray-700/50 shadow-lg flex flex-col gap-6"
+            <Head title="Вход в Steam Library" />
+            <div className="min-h-screen bg-[#0e1217] relative overflow-hidden flex items-center justify-center p-6">
+                {/* Animated background */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-purple-500/3 rounded-full blur-3xl"></div>
+                </div>
+
+                {/* Back to home */}
+                <Link
+                    href={route('home')}
+                    className="absolute top-6 left-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors duration-300"
                 >
-                    <h2 className="text-3xl font-semibold text-white text-center mb-6">Log in to your account</h2>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    На главную
+                </Link>
 
-                    <div className="flex flex-col gap-5">
-                        <div className="flex flex-col">
-                            <label htmlFor="email" className="mb-2 text-gray-300 font-medium">
-                                Email address
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                required
-                                autoFocus
-                                tabIndex={1}
-                                autoComplete="email"
-                                value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
-                                placeholder="email@example.com"
-                                className={`px-3 py-2 rounded bg-gray-900/50 border ${
-                                    errors.email ? 'border-red-600' : 'border-gray-600'
-                                } placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                            />
-                            {errors.email && (
-                                <p className="mt-1 text-sm text-red-500 select-text">{errors.email}</p>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col">
-                            <div className="flex items-center justify-between mb-2">
-                                <label htmlFor="password" className="text-gray-300 font-medium">
-                                    Password
-                                </label>
-                                {/*{canResetPassword && (*/}
-                                {/*    <a*/}
-                                {/*        href={route('password.request')}*/}
-                                {/*        tabIndex={5}*/}
-                                {/*        className="text-sm text-indigo-400 hover:text-indigo-600 transition select-none"*/}
-                                {/*    >*/}
-                                {/*        Forgot password?*/}
-                                {/*    </a>*/}
-                                {/*)}*/}
-                            </div>
-                            <input
-                                id="password"
-                                type="password"
-                                required
-                                tabIndex={2}
-                                autoComplete="current-password"
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                placeholder="Password"
-                                className={`px-3 py-2 rounded bg-gray-900/50 border ${
-                                    errors.password ? 'border-red-600' : 'border-gray-600'
-                                } placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                            />
-                            {errors.password && (
-                                <p className="mt-1 text-sm text-red-500 select-text">{errors.password}</p>
-                            )}
-                        </div>
-
-                        <div className="flex items-center space-x-3">
-                            <input
-                                id="remember"
-                                type="checkbox"
-                                checked={data.remember}
-                                onChange={() => setData('remember', !data.remember)}
-                                tabIndex={3}
-                                className="w-4 h-4 rounded border-gray-600 checked:bg-indigo-600 checked:border-indigo-600 focus:ring-indigo-500"
-                            />
-                            <label htmlFor="remember" className="text-gray-300 select-none cursor-pointer">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            tabIndex={4}
-                            className="mt-4 w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 rounded shadow-md hover:shadow-lg transition disabled:opacity-70 flex justify-center items-center gap-2"
-                        >
-                            {processing && <LoaderCircle className="h-5 w-5 animate-spin" />}
-                            Log in
-                        </button>
-
-                        <button
-                            type="button"
-                            disabled={processing}
-                            tabIndex={4}
-                            onClick={() => (window.location.href = route('auth.steam'))}
-                            className="w-full bg-gradient-to-r bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 rounded shadow-md hover:shadow-lg transition flex justify-center items-center gap-2"
-                        >
-                            {processing && <LoaderCircle className="h-5 w-5 animate-spin" />}
-                            Login via Steam
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M2.56967 20.0269C4.30041 25.7964 9.65423 30 15.9906 30C23.7274 30 29.9995 23.7318 29.9995 16C29.9995 8.26803 23.7274 2 15.9906 2C8.56634 2 2.49151 7.77172 2.01172 15.0699C2.01172 17.1667 2.01172 18.0417 2.56967 20.0269Z"
-                                    fill="url(#paint0_linear_87_8314)"
-                                />
-                                <path
-                                    d="M15.2706 12.5629L11.8426 17.5395C11.0345 17.5028 10.221 17.7314 9.54572 18.1752L2.01829 15.0784C2.01829 15.0784 1.84411 17.9421 2.56999 20.0763L7.89147 22.2707C8.15866 23.464 8.97779 24.5107 10.1863 25.0142C12.1635 25.8398 14.4433 24.8988 15.2658 22.922C15.4799 22.4052 15.5797 21.8633 15.5652 21.3225L20.5904 17.8219C23.5257 17.8219 25.9114 15.4305 25.9114 12.4937C25.9114 9.55673 23.5257 7.16748 20.5904 7.16748C17.7553 7.16748 15.1117 9.64126 15.2706 12.5629ZM14.4469 22.5783C13.8103 24.1057 12.054 24.8303 10.5273 24.1946C9.82302 23.9014 9.29128 23.3642 8.98452 22.7237L10.7167 23.4411C11.8426 23.9098 13.1343 23.3762 13.6023 22.2514C14.0718 21.1254 13.5392 19.8324 12.4139 19.3637L10.6233 18.6222C11.3142 18.3603 12.0997 18.3507 12.8336 18.6559C13.5734 18.9635 14.1475 19.5428 14.4517 20.283C14.756 21.0233 14.7548 21.8404 14.4469 22.5783ZM20.5904 16.0434C18.6364 16.0434 17.0455 14.4511 17.0455 12.4937C17.0455 10.5379 18.6364 8.94518 20.5904 8.94518C22.5457 8.94518 24.1365 10.5379 24.1365 12.4937C24.1365 14.4511 22.5457 16.0434 20.5904 16.0434ZM17.9341 12.4883C17.9341 11.0159 19.127 9.82159 20.5964 9.82159C22.0671 9.82159 23.2599 11.0159 23.2599 12.4883C23.2599 13.9609 22.0671 15.1541 20.5964 15.1541C19.127 15.1541 17.9341 13.9609 17.9341 12.4883Z"
-                                    fill="white"
-                                />
-                                <defs>
-                                    <linearGradient id="paint0_linear_87_8314" x1="16.0056" y1="2" x2="16.0056" y2="30" gradientUnits="userSpaceOnUse">
-                                        <stop stopColor="#111D2E" />
-                                        <stop offset="0.21248" stopColor="#051839" />
-                                        <stop offset="0.40695" stopColor="#0A1B48" />
-                                        <stop offset="0.5811" stopColor="#132E62" />
-                                        <stop offset="0.7376" stopColor="#144B7E" />
-                                        <stop offset="0.87279" stopColor="#136497" />
-                                        <stop offset="1" stopColor="#1387B8" />
-                                    </linearGradient>
-                                </defs>
+                <div className="w-full max-w-md relative z-10">
+                    {/* Logo */}
+                    <div className="text-center mb-8">
+                        <Link href={route('home')} className="inline-flex items-center gap-3 group">
+                            <svg className="w-12 h-12 text-blue-400 group-hover:text-blue-300 transition-colors" viewBox="0 0 32 32" fill="currentColor">
+                                <path d="M2.57 20.027C4.3 25.796 9.654 30 15.99 30c7.737 0 14-6.268 14-14 0-7.732-6.263-14-14-14C8.566 2 2.492 7.772 2.012 15.07c0 2.097 0 2.972.558 4.957z" />
+                                <path d="M15.27 12.563l-3.428 4.976c-.808-.037-1.622.192-2.297.636L2.018 15.078S1.844 17.942 2.57 20.076l5.321 2.195c.267 1.193 1.086 2.24 2.295 2.743 1.977.826 4.257-.114 5.08-2.09.214-.517.314-1.06.3-1.6l5.025-3.501c3.935 0 6.321-2.391 6.321-5.328 0-2.937-2.386-5.326-6.321-5.326-2.835 0-5.479 2.474-5.32 5.396zm-.824 9.015c-.636 1.528-2.393 2.252-3.92 1.617-.704-.293-1.236-.83-1.543-1.47l1.732.717c1.126.469 2.418-.064 2.886-1.189.47-1.126-.062-2.419-1.187-2.887l-1.79-.659c.691-.262 1.476-.271 2.21.034.74.307 1.314.887 1.618 1.627.304.74.303 1.557-.005 2.295zm6.168-6.535c-1.954 0-3.545-1.592-3.545-3.55 0-1.956 1.591-3.548 3.545-3.548 1.955 0 3.546 1.592 3.546 3.548 0 1.958-1.591 3.55-3.546 3.55zm-2.656-3.555c0-1.472 1.193-2.666 2.662-2.666 1.471 0 2.664 1.194 2.664 2.666 0 1.473-1.193 2.666-2.664 2.666-1.469 0-2.662-1.193-2.662-2.666z" fill="white" />
                             </svg>
-                        </button>
-
-                        {/*<div className="text-gray-400 text-center text-sm mt-4 select-none">*/}
-                        {/*    Don't have an account?{' '}*/}
-                            {/*<a*/}
-                            {/*    href={route('register')}*/}
-                            {/*    tabIndex={5}*/}
-                            {/*    className="text-indigo-400 hover:text-indigo-600 transition"*/}
-                            {/*>*/}
-                            {/*    Sign up*/}
-                            {/*</a>*/}
-                        {/*</div>*/}
+                            <span className="text-3xl font-bold font-['Instrument_Sans'] group-hover:text-blue-300 transition-colors">Steam Library</span>
+                        </Link>
+                        <p className="text-slate-400 mt-2">Войдите в свой аккаунт</p>
                     </div>
 
+                    {/* Status message */}
                     {status && (
-                        <div className="mt-6 rounded-md bg-green-700/70 p-3 text-center text-sm font-medium text-green-200 shadow-md">
+                        <div className="mb-6 rounded-xl bg-green-500/10 backdrop-blur-md p-4 border border-green-500/20 text-center text-sm font-medium text-green-400">
                             {status}
                         </div>
                     )}
-                </form>
+
+                    {/* Main form card */}
+                    <div className="bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-8 border border-white/5 shadow-2xl">
+                        {/* Steam Login - Primary */}
+                        <button
+                            type="button"
+                            disabled={processing}
+                            onClick={() => (window.location.href = route('auth.steam'))}
+                            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 flex justify-center items-center gap-3 group"
+                        >
+                            {processing ? (
+                                <LoaderCircle className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <svg className="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 32 32" fill="currentColor">
+                                        <path d="M2.57 20.027C4.3 25.796 9.654 30 15.99 30c7.737 0 14-6.268 14-14 0-7.732-6.263-14-14-14C8.566 2 2.492 7.772 2.012 15.07c0 2.097 0 2.972.558 4.957z" />
+                                        <path d="M15.27 12.563l-3.428 4.976c-.808-.037-1.622.192-2.297.636L2.018 15.078S1.844 17.942 2.57 20.076l5.321 2.195c.267 1.193 1.086 2.24 2.295 2.743 1.977.826 4.257-.114 5.08-2.09.214-.517.314-1.06.3-1.6l5.025-3.501c3.935 0 6.321-2.391 6.321-5.328 0-2.937-2.386-5.326-6.321-5.326-2.835 0-5.479 2.474-5.32 5.396zm-.824 9.015c-.636 1.528-2.393 2.252-3.92 1.617-.704-.293-1.236-.83-1.543-1.47l1.732.717c1.126.469 2.418-.064 2.886-1.189.47-1.126-.062-2.419-1.187-2.887l-1.79-.659c.691-.262 1.476-.271 2.21.034.74.307 1.314.887 1.618 1.627.304.74.303 1.557-.005 2.295zm6.168-6.535c-1.954 0-3.545-1.592-3.545-3.55 0-1.956 1.591-3.548 3.545-3.548 1.955 0 3.546 1.592 3.546 3.548 0 1.958-1.591 3.55-3.546 3.55zm-2.656-3.555c0-1.472 1.193-2.666 2.662-2.666 1.471 0 2.664 1.194 2.664 2.666 0 1.473-1.193 2.666-2.664 2.666-1.469 0-2.662-1.193-2.662-2.666z" fill="white" />
+                                    </svg>
+                                    Войти через Steam
+                                </>
+                            )}
+                        </button>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 my-6">
+                            <div className="flex-1 h-px bg-white/10"></div>
+                            <span className="text-sm text-slate-500">или используйте email</span>
+                            <div className="flex-1 h-px bg-white/10"></div>
+                        </div>
+
+                        {/* Email/Password form */}
+                        <form onSubmit={submit} className="space-y-5">
+                            {/* Email field */}
+                            <div className="space-y-2">
+                                <label htmlFor="email" className="text-sm font-medium text-slate-300 block">
+                                    Email адрес
+                                </label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    autoFocus
+                                    tabIndex={1}
+                                    autoComplete="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="email@example.com"
+                                    className={`w-full px-4 py-3 rounded-xl bg-slate-900/50 border ${
+                                        errors.email ? 'border-red-500/50' : 'border-white/5'
+                                    } placeholder-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all`}
+                                />
+                                {errors.email && (
+                                    <p className="text-sm text-red-400 flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        {errors.email}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Password field */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label htmlFor="password" className="text-sm font-medium text-slate-300 block">
+                                        Пароль
+                                    </label>
+                                    {canResetPassword && (
+                                        <Link
+                                            href={route('password.request')}
+                                            tabIndex={5}
+                                            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                                        >
+                                            Забыли пароль?
+                                        </Link>
+                                    )}
+                                </div>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    required
+                                    tabIndex={2}
+                                    autoComplete="current-password"
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    placeholder="••••••••"
+                                    className={`w-full px-4 py-3 rounded-xl bg-slate-900/50 border ${
+                                        errors.password ? 'border-red-500/50' : 'border-white/5'
+                                    } placeholder-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all`}
+                                />
+                                {errors.password && (
+                                    <p className="text-sm text-red-400 flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        {errors.password}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Remember me */}
+                            <div className="flex items-center">
+                                <input
+                                    id="remember"
+                                    type="checkbox"
+                                    checked={data.remember}
+                                    onChange={() => setData('remember', !data.remember)}
+                                    tabIndex={3}
+                                    className="w-4 h-4 rounded border-white/10 bg-slate-900/50 text-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-0 cursor-pointer"
+                                />
+                                <label htmlFor="remember" className="ml-3 text-sm text-slate-300 cursor-pointer select-none">
+                                    Запомнить меня
+                                </label>
+                            </div>
+
+                            {/* Submit button */}
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                tabIndex={4}
+                                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {processing && <LoaderCircle className="h-5 w-5 animate-spin" />}
+                                Войти с Email
+                            </button>
+                        </form>
+
+                        {/* Sign up link */}
+                        {/*<div className="mt-6 text-center">*/}
+                        {/*    <p className="text-sm text-slate-400">*/}
+                        {/*        Нет аккаунта?{' '}*/}
+                        {/*        <Link*/}
+                        {/*            href={route('register')}*/}
+                        {/*            className="text-blue-400 hover:text-blue-300 font-medium transition-colors"*/}
+                        {/*        >*/}
+                        {/*            Зарегистрироваться*/}
+                        {/*        </Link>*/}
+                        {/*    </p>*/}
+                        {/*</div>*/}
+                    </div>
+
+                    {/* Security notice */}
+                    <div className="mt-6 text-center">
+                        <p className="text-xs text-slate-500 flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                            Защищенное соединение. Мы используем только публичные данные Steam API.
+                        </p>
+                    </div>
+                </div>
             </div>
         </>
     );

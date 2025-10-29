@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 import { Platforms } from '@/pages/GamesList/components/gameDetailsView/components/Platforms';
+import { Monitor, Zap } from 'lucide-react';
 
-export const GameRequirements = ({info}: {info:any}) => {
-    const [activeTab, setActiveTab] = useState<"min" | "rec">("min");
+export const GameRequirements = ({ info }: { info: any }) => {
+    const [activeTab, setActiveTab] = useState<'min' | 'rec'>('min');
 
     const hasMin =
         info.pc_requirements?.minimum ||
@@ -18,120 +19,100 @@ export const GameRequirements = ({info}: {info:any}) => {
     if (!hasMin && !hasRec) return null;
 
     return (
-        <motion.section
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-        >
-            <h3 className="text-xl font-semibold text-white mb-4">Системные требования</h3>
-            {/* Платформы */}
+        <section className="rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+                <Monitor className="w-6 h-6 text-cyan-400" />
+                <h3 className="text-xl font-bold text-white">Системные требования</h3>
+            </div>
+
+            {/* Platforms */}
             <Platforms info={info} />
-            {/* Горизонтальные табы */}
-            <div className="flex mb-4 border-b border-gray-700">
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6">
                 <button
-                    onClick={() => setActiveTab("min")}
-                    className={`relative px-4 py-2 text-sm ${
-                        activeTab === "min" ? "text-white" : "text-gray-400 hover:text-gray-300"
-                    } transition-colors`}
+                    onClick={() => setActiveTab('min')}
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        activeTab === 'min'
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:bg-slate-900/60'
+                    }`}
                 >
+                    <Monitor className="w-4 h-4" />
                     Минимальные
-                    {activeTab === "min" && (
-                        <motion.div
-                            layoutId="activeTab"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
-                            transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                        />
-                    )}
                 </button>
 
                 {hasRec && (
                     <button
-                        onClick={() => setActiveTab("rec")}
-                        className={`relative px-4 py-2 text-sm ${
-                            activeTab === "rec" ? "text-white" : "text-gray-400 hover:text-gray-300"
-                        } transition-colors`}
+                        onClick={() => setActiveTab('rec')}
+                        className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                            activeTab === 'rec'
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:bg-slate-900/60'
+                        }`}
                     >
+                        <Zap className="w-4 h-4" />
                         Рекомендуемые
-                        {activeTab === "rec" && (
-                            <motion.div
-                                layoutId="activeTab"
-                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
-                                transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                            />
-                        )}
                     </button>
                 )}
             </div>
 
-            {/* Горизонтальное расположение контента */}
-            <div className="relative overflow-hidden">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={activeTab}
-                        initial={{ x: activeTab === "min" ? -50 : 50, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: activeTab === "min" ? 50 : -50, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="grid grid-cols-3 md:grid-cols-3 gap-4"
-                    >
-                        {activeTab === "min" ? (
-                            <>
-                                    {info.pc_requirements?.minimum && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="PC Минимальные" html={info.pc_requirements.minimum} />
-                                        </div>
-                                    )}
-                                    {info.mac_requirements?.minimum && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="Mac Минимальные" html={info.mac_requirements.minimum} />
-                                        </div>
-                                    )}
-                                    {info.linux_requirements?.minimum && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="Linux+SteamOS Минимальные" html={info.linux_requirements.minimum} />
-                                        </div>
-                                    )}
-                            </>
-                        ) : (
-                            <>
-                                    {info.pc_requirements?.recommended && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="PC Рекомендуемые" html={info.pc_requirements.recommended} />
-                                        </div>
-                                    )}
-                                    {info.mac_requirements?.recommended && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="Mac Рекомендуемые" html={info.mac_requirements.recommended} />
-                                        </div>
-                                    )}
-                                    {info.linux_requirements?.recommended && (
-                                        <div className="space-y-4">
-                                        <RequirementBox title="Linux+SteamOS Рекомендуемые" html={info.linux_requirements.recommended} />
-                                        </div>
-                                    )}
-                            </>
-                        )}
-                    </motion.div>
-                </AnimatePresence>
-            </div>
-        </motion.section>
+            {/* Content */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid md:grid-cols-3 gap-4"
+                >
+                    {activeTab === 'min' ? (
+                        <>
+                            {info.pc_requirements?.minimum && (
+                                <RequirementBox title="Windows" html={info.pc_requirements.minimum} icon="🪟" />
+                            )}
+                            {info.mac_requirements?.minimum && (
+                                <RequirementBox title="macOS" html={info.mac_requirements.minimum} icon="🍎" />
+                            )}
+                            {info.linux_requirements?.minimum && (
+                                <RequirementBox title="Linux" html={info.linux_requirements.minimum} icon="🐧" />
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {info.pc_requirements?.recommended && (
+                                <RequirementBox title="Windows" html={info.pc_requirements.recommended} icon="🪟" />
+                            )}
+                            {info.mac_requirements?.recommended && (
+                                <RequirementBox title="macOS" html={info.mac_requirements.recommended} icon="🍎" />
+                            )}
+                            {info.linux_requirements?.recommended && (
+                                <RequirementBox title="Linux" html={info.linux_requirements.recommended} icon="🐧" />
+                            )}
+                        </>
+                    )}
+                </motion.div>
+            </AnimatePresence>
+        </section>
     );
 };
 
-// Адаптированный RequirementBox для горизонтального расположения
-const RequirementBox = ({ title, html }) => (
+const RequirementBox = ({ title, html, icon }) => (
     <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="bg-gray-800/60 p-4 rounded-lg border border-gray-700 h-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-white/5 h-full"
     >
-        <h4 className="text-lg font-medium text-white mb-2">{title}</h4>
+        <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">{icon}</span>
+            <h4 className="font-semibold text-white">{title}</h4>
+        </div>
         <div
-            className="text-gray-300 prose prose-invert prose-sm"
+            className="text-sm text-slate-300 prose prose-invert prose-sm [&>ul]:list-none [&>ul]:pl-0 [&>ul>li]:mb-2 [&_strong]:text-slate-200"
             dangerouslySetInnerHTML={{ __html: html }}
         />
     </motion.div>
 );
+
 export default GameRequirements;

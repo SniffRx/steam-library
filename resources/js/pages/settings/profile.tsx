@@ -2,6 +2,8 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Switch, Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import { motion } from 'framer-motion';
+import { User, Mail, CheckCircle, Zap } from 'lucide-react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -13,10 +15,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile'
-    }
+    { title: 'Profile settings', href: '/settings/profile' }
 ];
 
 type ProfileForm = {
@@ -36,96 +35,124 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        patch(route('profile.update'), {
-            preserveScroll: true
-        });
+        patch(route('profile.update'), { preserveScroll: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
+            <Head title="Profile settings - Steam Library" />
 
             <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update your name and email address" />
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                            <User className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <HeadingSmall
+                            title="Информация профиля"
+                            description="Обновите данные вашего аккаунта"
+                        />
+                    </div>
 
-                    <form onSubmit={submit} className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
-
+                    <form onSubmit={submit} className="bg-[#1a1f29]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="name" className="text-slate-300 flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                Имя
+                            </Label>
                             <Input
                                 id="name"
-                                className="mt-1 block w-full"
+                                className="bg-slate-900/50 border-white/5 text-white placeholder-slate-500"
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 required
                                 autoComplete="name"
-                                placeholder="Full name"
+                                placeholder="Полное имя"
                             />
-
-                            <InputError className="mt-2" message={errors.name} />
+                            <InputError message={errors.name} />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
-
+                        <div className="space-y-2">
+                            <Label htmlFor="email" className="text-slate-300 flex items-center gap-2">
+                                <Mail className="w-4 h-4" />
+                                Email адрес
+                            </Label>
                             <Input
                                 id="email"
                                 type="email"
-                                className="mt-1 block w-full"
+                                className="bg-slate-900/50 border-white/5 text-white placeholder-slate-500"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
                                 required
                                 autoComplete="username"
-                                placeholder="Email address"
+                                placeholder="Email адрес"
                             />
-
-                            <InputError className="mt-2" message={errors.email} />
+                            <InputError message={errors.email} />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="auto_complete_achievement">Автоматическая пометка "Пройдено"</Label>
-
-                            <Switch
-                                checked={data.auto_mark_completed}
-                                onChange={(value) => setData('auto_mark_completed', value)}
-                                className={`${data.auto_mark_completed ? 'bg-blue-600' : 'bg-gray-300'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
-                            >
-                                <span
+                        <div className="space-y-3 p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-green-500/10">
+                                        <Zap className="w-5 h-5 text-green-400" />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="auto_complete_achievement" className="text-white font-medium cursor-pointer">
+                                            Автоматическая пометка "Пройдено"
+                                        </Label>
+                                        <p className="text-sm text-slate-400">При получении всех достижений</p>
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={data.auto_mark_completed}
+                                    onChange={(value) => setData('auto_mark_completed', value)}
                                     className={`${
-                                        data.auto_mark_completed ? 'translate-x-6' : 'translate-x-1'
-                                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                                />
-                            </Switch>
-
-                            <InputError className="mt-2" message={errors.auto_mark_completed} />
+                                        data.auto_mark_completed ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-slate-700'
+                                    } relative inline-flex h-7 w-12 items-center rounded-full transition-all shadow-lg`}
+                                >
+                                    <span
+                                        className={`${
+                                            data.auto_mark_completed ? 'translate-x-6' : 'translate-x-1'
+                                        } inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-md`}
+                                    />
+                                </Switch>
+                            </div>
+                            <InputError message={errors.auto_mark_completed} />
                         </div>
 
                         {mustVerifyEmail && auth.user.email_verified_at === null && (
-                            <div>
-                                <p className="text-muted-foreground -mt-4 text-sm">
-                                    Your email address is unverified.{' '}
+                            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+                                <p className="text-sm text-yellow-400">
+                                    Ваш email не подтвержден.{' '}
                                     <Link
                                         href={route('verification.send')}
                                         method="post"
                                         as="button"
-                                        className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                        className="underline hover:text-yellow-300 transition-colors"
                                     >
-                                        Click here to resend the verification email.
+                                        Нажмите здесь, чтобы отправить письмо повторно.
                                     </Link>
                                 </p>
 
                                 {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                        A new verification link has been sent to your email address.
+                                    <div className="mt-2 text-sm text-green-400">
+                                        Письмо с подтверждением отправлено на ваш email.
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
+                        <div className="flex items-center gap-4 pt-4">
+                            <Button
+                                disabled={processing}
+                                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400"
+                            >
+                                Сохранить
+                            </Button>
 
                             <Transition
                                 show={recentlySuccessful}
@@ -134,13 +161,16 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 leave="transition ease-in-out"
                                 leaveTo="opacity-0"
                             >
-                                <p className="text-sm text-neutral-600">Saved</p>
+                                <p className="flex items-center gap-2 text-sm text-green-400">
+                                    <CheckCircle className="w-4 h-4" />
+                                    Сохранено
+                                </p>
                             </Transition>
                         </div>
                     </form>
-                </div>
 
-                <DeleteUser />
+                    <DeleteUser />
+                </motion.div>
             </SettingsLayout>
         </AppLayout>
     );

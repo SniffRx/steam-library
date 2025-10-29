@@ -1,17 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Slider from 'react-slick';
-import { ChevronLeftIcon, ChevronRightIcon, PlayIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Image as ImageIcon } from 'lucide-react';
 
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
 export const MediaCarousel = ({ info }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [direction, setDirection] = useState<'left' | 'right'>('right');
-    const thumbnailsRef = useRef<any>(null); // ref для Slick слайдера
+    const thumbnailsRef = useRef<any>(null);
 
-    // Объединяем медиа в один массив с указанием типа
     const mediaItems = [
         ...(info.screenshots?.map(shot => ({
             type: 'image',
@@ -28,32 +26,23 @@ export const MediaCarousel = ({ info }) => {
     if (mediaItems.length === 0) return null;
 
     const nextSlide = () => {
-        setDirection('right');
-        setCurrentIndex((prev) =>
-            prev === mediaItems.length - 1 ? 0 : prev + 1
-        );
+        setCurrentIndex((prev) => (prev === mediaItems.length - 1 ? 0 : prev + 1));
     };
 
     const prevSlide = () => {
-        setDirection('left');
-        setCurrentIndex((prev) =>
-            prev === 0 ? mediaItems.length - 1 : prev - 1
-        );
+        setCurrentIndex((prev) => (prev === 0 ? mediaItems.length - 1 : prev - 1));
     };
 
     const goToSlide = (index: number) => {
-        setDirection(index > currentIndex ? 'right' : 'left');
         setCurrentIndex(index);
     };
 
-    // Автофокус на миниатюре при изменении currentIndex
     useEffect(() => {
-        if (thumbnailsRef.current && thumbnailsRef.current.slickGoTo) {
+        if (thumbnailsRef.current?.slickGoTo) {
             thumbnailsRef.current.slickGoTo(currentIndex);
         }
     }, [currentIndex]);
 
-    // Настройки карусели миниатюр
     const thumbnailSettings = {
         slidesToShow: Math.min(mediaItems.length, 6),
         infinite: false,
@@ -62,61 +51,50 @@ export const MediaCarousel = ({ info }) => {
         draggable: true,
         arrows: false,
         responsive: [
-            {
-                breakpoint: 1024,
-                settings: {
-                    slidesToShow: 5,
-                },
-            },
-            {
-                breakpoint: 768,
-                settings: {
-                    slidesToShow: 4,
-                },
-            },
-            {
-                breakpoint: 480,
-                settings: {
-                    slidesToShow: 3,
-                },
-            },
+            { breakpoint: 1024, settings: { slidesToShow: 5 } },
+            { breakpoint: 768, settings: { slidesToShow: 4 } },
+            { breakpoint: 480, settings: { slidesToShow: 3 } },
         ],
     };
 
     return (
-        <section className="mb-8">
+        <section className="rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-sm p-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Медиа</h3>
+                <h3 className="flex items-center gap-2 text-xl font-bold text-white">
+                    <ImageIcon className="w-5 h-5 text-blue-400" />
+                    Медиа
+                </h3>
                 {mediaItems.length > 1 && (
-                    <div className="flex space-x-2">
-                        <button
+                    <div className="flex gap-2">
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={prevSlide}
-                            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
-                            aria-label="Previous media"
+                            className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700 border border-white/5 transition-colors"
                         >
-                            <ChevronLeftIcon className="w-5 h-5 text-white" />
-                        </button>
-                        <button
+                            <ChevronLeft className="w-5 h-5 text-white" />
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={nextSlide}
-                            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
-                            aria-label="Next media"
+                            className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700 border border-white/5 transition-colors"
                         >
-                            <ChevronRightIcon className="w-5 h-5 text-white" />
-                        </button>
+                            <ChevronRight className="w-5 h-5 text-white" />
+                        </motion.button>
                     </div>
                 )}
             </div>
 
-            {/* Основная карусель */}
-            <div className="relative overflow-hidden rounded-lg bg-gray-900/50 aspect-video mb-3">
-                <AnimatePresence custom={direction}>
+            {/* Main View */}
+            <div className="relative overflow-hidden rounded-xl bg-slate-950 aspect-video mb-4">
+                <AnimatePresence mode="wait">
                     <motion.div
                         key={currentIndex}
-                        custom={direction}
-                        initial={{ x: direction === 'right' ? '100%' : '-100%', opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: direction === 'right' ? '-100%' : '100%', opacity: 0 }}
-                        transition={{ duration: 0.5 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
                         className="absolute inset-0 flex items-center justify-center"
                     >
                         {mediaItems[currentIndex].type === 'image' ? (
@@ -124,7 +102,6 @@ export const MediaCarousel = ({ info }) => {
                                 src={mediaItems[currentIndex].data.path_full}
                                 alt={`Screenshot ${currentIndex + 1}`}
                                 className="object-contain w-full h-full cursor-pointer"
-                                loading="lazy"
                                 onClick={() => window.open(mediaItems[currentIndex].data.path_full)}
                             />
                         ) : (
@@ -134,30 +111,25 @@ export const MediaCarousel = ({ info }) => {
                                 className="w-full h-full bg-black"
                             >
                                 <source src={mediaItems[currentIndex].data.webm?.max} type="video/webm" />
-                                Ваш браузер не поддерживает видео.
                             </video>
                         )}
                     </motion.div>
                 </AnimatePresence>
             </div>
 
-            {/* Миниатюры с использованием Slick Carousel */}
+            {/* Thumbnails */}
             {mediaItems.length > 1 && (
-                <div className="mt-4">
-                    <Slider {...thumbnailSettings} ref={thumbnailsRef}>
-                        {mediaItems.map((item, index) => (
+                <Slider {...thumbnailSettings} ref={thumbnailsRef}>
+                    {mediaItems.map((item, index) => (
+                        <div key={item.id} className="px-1">
                             <motion.div
-                                key={item.id}
-                                initial={{ opacity: 0.7, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                whileHover={{ scale: 1.05, zIndex: 10 }}
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                className={`mx-1 snap-start w-24 h-14 overflow-hidden rounded-lg border-2 transition-all duration-300 ease-in-out ${
+                                className={`relative w-full h-16 overflow-hidden rounded-lg cursor-pointer border-2 transition-all ${
                                     index === currentIndex
-                                        ? 'border-blue-500 ring-2 ring-blue-400 shadow-lg'
-                                        : 'border-transparent hover:border-gray-500 hover:shadow-md'
-                                } cursor-pointer`}
+                                        ? 'border-blue-500 shadow-lg shadow-blue-500/50'
+                                        : 'border-white/10 hover:border-white/30'
+                                }`}
                                 onClick={() => goToSlide(index)}
                             >
                                 {item.type === 'image' ? (
@@ -165,20 +137,19 @@ export const MediaCarousel = ({ info }) => {
                                         src={item.data.path_thumbnail}
                                         alt={`Thumbnail ${index + 1}`}
                                         className="object-cover w-full h-full"
-                                        loading="lazy"
                                     />
                                 ) : (
-                                    <div className="relative w-full h-full bg-gray-800 flex items-center justify-center group">
-                                        <PlayIcon className="w-5 h-5 text-white transition-transform group-hover:scale-110" />
-                                        <span className="sr-only">Video thumbnail</span>
+                                    <div className="relative w-full h-full bg-slate-800 flex items-center justify-center">
+                                        <Play className="w-6 h-6 text-white" />
                                     </div>
                                 )}
                             </motion.div>
-                        ))}
-                    </Slider>
-                </div>
+                        </div>
+                    ))}
+                </Slider>
             )}
         </section>
     );
 };
+
 export default MediaCarousel;
