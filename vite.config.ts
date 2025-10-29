@@ -9,38 +9,28 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
-            refresh: true
+            refresh: true,
+            buildDirectory: 'build', // Явно указываем директорию
         }),
         react(),
         tailwindcss()
     ],
-    // server: {
-    //     host: '0.0.0.0',
-    //     port: 5173,
-    //     cors: {
-    //         origin: 'http://192.168.1.141:8000', // ваш IP и порт Laravel
-    //         // или origin: '*' для разработки, но менее безопасно
-    //         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    //         allowedHeaders: ['*'],
-    //         credentials: true,
-    //     },
-    //     hmr: {
-    //         host: '192.168.1.141', // IP сервера для hot reload
-    //         protocol: 'ws',
-    //         port: 5173,
-    //     },
-    // },
     build: {
-        outDir: 'public/build', // 👈 это важно для Laravel
+        outDir: 'public/build',
         emptyOutDir: true,
         manifest: true,
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+            }
+        }
     },
-    base: process.env.ASSET_URL ? process.env.ASSET_URL + '/build/' : '/build/',
     esbuild: {
         jsx: 'automatic'
     },
     resolve: {
         alias: {
+            '@': resolve(__dirname, 'resources/js'),
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy')
         }
     }
