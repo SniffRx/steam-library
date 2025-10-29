@@ -7,6 +7,7 @@ services:
         restart: unless-stopped
         volumes:
             - .:/var/www
+            - ./public/build:/var/www/public/build
         ports:
             - "8080:80"
         environment:
